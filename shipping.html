@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出貨錄影時間點紀錄系統</title>
+    <style>
+        :root {
+            --primary-color: #1e293b;
+            --secondary-color: #334155;
+            --accent-color: #2563eb;
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            
+            /* 物流專屬配色 */
+            --tag-shopee: #ff5722;
+            --tag-711: #008000;
+            --tag-family: #00a0e9;
+            --tag-hsinchu: #003399;
+            --tag-kerry: #e60012;
+            --tag-blackcat: #f39c12;
+        }
+
+        * { box-sizing: border-box; font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); color: #1e293b; line-height: 1.5; padding-bottom: 50px; }
+
+        header { 
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
+            color: white; 
+            text-align: center; 
+            padding: 18px 20px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+        }
+        header h1 { font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+
+        .tab-nav { display: flex; justify-content: center; background-color: var(--secondary-color); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .tab-btn { 
+            background: none; border: none; color: #94a3b8; padding: 14px 32px; font-size: 16px; font-weight: bold; 
+            cursor: pointer; transition: all 0.25s ease; outline: none; display: flex; align-items: center; gap: 8px; 
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn:hover { color: #f8fafc; background-color: rgba(255,255,255,0.05); }
+        .tab-btn.active { color: #ffffff; background-color: rgba(255,255,255,0.1); border-bottom-color: #38bdf8; }
+
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card { 
+            background-color: var(--card-bg); border-radius: 12px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+            border: 1px solid var(--border-color); padding: 24px; margin-bottom: 24px; 
+        }
+        .card-title { 
+            font-size: 18px; font-weight: 700; margin-bottom: 18px; border-bottom: 2px solid #f1f5f9; 
+            padding-bottom: 10px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; 
+        }
+
+        /* 現場包貨 網格配置 */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+        
+        /* 歷史查詢 專用兩行網格 (改為 3 欄式配置，極致舒適不擁擠) */
+        .query-form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 18px; 
+        }
+        
+        @media (max-width: 900px) {
+            .query-form-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-weight: 700; font-size: 14px; color: #475569; }
+        
+        .form-control { 
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border-color); border-radius: 8px; 
+            font-size: 15px; transition: all 0.2s; background-color: #f8fafc; color: #0f172a;
+        }
+        .form-control:focus { 
+            border-color: var(--accent-color); background-color: #fff; outline: none; 
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15); 
+        }
+        
+        .barcode-input-wrapper { display: flex; gap: 12px; margin-top: 6px; }
+        .barcode-input-wrapper input { 
+            font-size: 20px; font-weight: bold; letter-spacing: 1px; color: #0f172a; background-color: #fff;
+            border: 2px solid #cbd5e1;
+        }
+        .barcode-input-wrapper input:focus { border-color: var(--accent-color); }
+
+        .date-range-group { display: flex; align-items: center; gap: 8px; }
+
+        .btn { 
+            padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; 
+            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-success:hover { background-color: #15803d; }
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-cancel { 
+            background-color: #fef2f2; border: 1px solid #fca5a5; color: #ef4444; 
+            padding: 6px 12px; font-size: 13px; border-radius: 6px; font-weight: 600;
+        }
+        .btn-cancel:hover { background-color: #dc2626; color: white; }
+
+        .status-display {
+            margin-top: 20px; padding: 20px 24px; border-radius: 10px; font-size: 18px; font-weight: 700;
+            display: flex; align-items: center; justify-content: space-between; gap: 15px; transition: all 0.3s ease;
+        }
+        .status-display .status-icon { font-size: 32px; display: flex; align-items: center; justify-content: center; }
+        .status-display .status-text { flex-grow: 1; }
+        .status-display .status-time { font-size: 16px; font-weight: bold; padding: 6px 12px; border-radius: 6px; background: rgba(255,255,255,0.6); }
+
+        .status-default { background-color: #f1f5f9; color: #64748b; border-left: 8px solid #94a3b8; }
+        .status-success { background-color: #dcfce7; color: #14532d; border-left: 8px solid var(--success-color); }
+        .status-duplicate { background-color: #fef3c7; color: #78350f; border-left: 8px solid var(--warning-color); }
+        .status-error { background-color: #fee2e2; color: #7f1d1d; border-left: 8px solid var(--danger-color); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-top: 10px; }
+        .stat-card { 
+            border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 10px; text-align: center; 
+            background-color: #ffffff; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .stat-card .title { font-size: 13px; color: #64748b; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .stat-card .count { font-size: 26px; font-weight: 800; color: #0f172a; }
+
+        .tag-badge { padding: 4px 10px; border-radius: 20px; color: white; font-size: 12px; font-weight: bold; display: inline-block; }
+        .tag-shopee { background-color: var(--tag-shopee); }
+        .tag-711 { background-color: var(--tag-711); }
+        .tag-711-ice { background-color: #00a896; }
+        .tag-family { background-color: var(--tag-family); }
+        .tag-family-ice { background-color: #028090; }
+        .tag-hsinchu { background-color: var(--tag-hsinchu); }
+        .tag-kerry { background-color: var(--tag-kerry); }
+        .tag-blackcat { background-color: var(--tag-blackcat); color: #000; }
+
+        .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; background-color: #fff; }
+        .data-table th { background-color: #f8fafc; color: #475569; font-weight: 700; padding: 12px; text-align: center; white-space: nowrap; border-bottom: 2px solid var(--border-color); }
+        .data-table td { border-bottom: 1px solid var(--border-color); padding: 12px; text-align: center; color: #334155; }
+        .data-table tbody tr:hover { background-color: #f1f5f9; }
+
+        .time-badge { color: #b91c1c; font-weight: 800; background-color: #fef2f2; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 14px; }
+        .badge-cancelled { background-color: #94a3b8; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        .row-cancelled { background-color: #fef2f2 !important; text-decoration: line-through; color: #94a3b8; }
+        .row-cancelled td { color: #94a3b8; }
+        .row-cancelled .time-badge { text-decoration: line-through; opacity: 0.5; }
+
+        .empty-msg { text-align: center; color: #94a3b8; padding: 40px; font-size: 15px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>出貨錄影時間點紀錄系統</h1>
+    </header>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('scan-tab', this)">
+            📦 包貨掃描作業
+        </button>
+        <button class="tab-btn" onclick="switchTab('query-tab', this)">
+            🔍 包裹歷史查詢
+        </button>
+    </div>
+
+    <div class="container">
+        <!-- 分頁一：包貨掃描作業 -->
+        <div id="scan-tab" class="tab-content active">
+            
+            <div class="card">
+                <div class="card-title">1. 出貨種類與人員設定</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="shippingType">物流方式：</label>
+                        <select id="shippingType" class="form-control">
+                            <option value="蝦皮店到店">蝦皮店到店</option>
+                            <option value="7-11常溫">7-11 常溫</option>
+                            <option value="7-11冷凍">7-11 冷凍</option>
+                            <option value="全家常溫">全家 常溫</option>
+                            <option value="全家冷凍">全家 冷凍</option>
+                            <option value="新竹物流">新竹物流</option>
+                            <option value="大榮物流">大榮物流</option>
+                            <option value="黑貓物流">黑貓物流</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="picker">撿貨人員：</label>
+                        <select id="picker" class="form-control">
+                            <option value="">-- 請選擇人員 --</option>
+                            <option value="儀君">儀君</option>
+                            <option value="婉容">婉容</option>
+                            <option value="艷秋">艷秋</option>
+                            <option value="禹萱">禹萱</option>
+                            <option value="佩穎">佩穎</option>
+                            <option value="品如">品如</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="packer">包貨人員：</label>
+                        <select id="packer" class="form-control">
+                            <option value="">-- 請選擇人員 --</option>
+                            <option value="儀君">儀君</option>
+                            <option value="婉容">婉容</option>
+                            <option value="艷秋">艷秋</option>
+                            <option value="禹萱">禹萱</option>
+                            <option value="佩穎">佩穎</option>
+                            <option value="品如">品如</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">2. 掃描條碼區</div>
+                <div class="form-group">
+                    <label for="barcodeInput">請使用條碼槍對準包裹單號掃描：</label>
+                    <div class="barcode-input-wrapper">
+                        <input type="text" id="barcodeInput" class="form-control" placeholder="等待條碼刷入中..." autofocus autocomplete="off">
+                        <button class="btn btn-success" onclick="processScan()">輸入</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 14px;">
+                    <label for="note">出貨備註（選填）：</label>
+                    <input type="text" id="note" class="form-control" placeholder="如需註記箱損、贈品等特殊狀況請填寫於此">
+                </div>
+
+                <div id="statusMessage" class="status-display status-default">
+                    <div class="status-icon">🔊</div>
+                    <div class="status-text">音效與驗證就緒，請開始掃描包裹條碼</div>
+                    <div class="status-time" id="statusTimeDisplay">--:--:--</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">今日各物流已包件數</div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-shopee">蝦皮</span></div><div class="count" id="cnt-shopee">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-711">7-11常溫</span></div><div class="count" id="cnt-711">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-711-ice">7-11冷凍</span></div><div class="count" id="cnt-711-ice">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-family">全家常溫</span></div><div class="count" id="cnt-family">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-family-ice">全家冷凍</span></div><div class="count" id="cnt-family-ice">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-hsinchu">新竹物流</span></div><div class="count" id="cnt-hsinchu">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-kerry">大榮物流</span></div><div class="count" id="cnt-kerry">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-blackcat">黑貓物流</span></div><div class="count" id="cnt-blackcat">0</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">現場最新掃描紀錄（最近 10 筆）</div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>序號</th>
+                                <th>精確包貨時間 (用於調監視器)</th>
+                                <th>物流管道</th>
+                                <th>寄件單號 / 條碼</th>
+                                <th>撿貨</th>
+                                <th>包貨</th>
+                                <th>備註</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scanRecentList">
+                            <tr><td colspan="8" class="empty-msg">目前尚無出貨紀錄</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分頁二：包裹歷史查詢 (已優化兩行式配置) -->
+        <div id="query-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">歷史包裹時間查詢</div>
+                
+                <div class="query-form-grid">
+                    <!-- 第一行：日期區間、搜尋單號、物流種類 -->
+                    <div class="form-group">
+                        <label>出貨日期區間：</label>
+                        <div class="date-range-group">
+                            <input type="date" id="queryStartDate" class="form-control">
+                            <span>至</span>
+                            <input type="date" id="queryEndDate" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="queryBarcode">搜尋單號 / 關鍵字：</label>
+                        <input type="text" id="queryBarcode" class="form-control" placeholder="輸入單號關鍵字...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="queryType">物流方式：</label>
+                        <select id="queryType" class="form-control">
+                            <option value="">全部分類</option>
+                            <option value="蝦皮店到店">蝦皮店到店</option>
+                            <option value="7-11常溫">7-11 常溫</option>
+                            <option value="7-11冷凍">7-11 冷凍</option>
+                            <option value="全家常溫">全家 常溫</option>
+                            <option value="全家冷凍">全家 冷凍</option>
+                            <option value="新竹物流">新竹物流</option>
+                            <option value="大榮物流">大榮物流</option>
+                            <option value="黑貓物流">黑貓物流</option>
+                        </select>
+                    </div>
+
+                    <!-- 第二行：撿貨人員、包貨人員 -->
+                    <div class="form-group">
+                        <label for="queryPicker">撿貨人員：</label>
+                        <select id="queryPicker" class="form-control">
+                            <option value="">全部人員</option>
+                            <option value="儀君">儀君</option>
+                            <option value="婉容">婉容</option>
+                            <option value="艷秋">艷秋</option>
+                            <option value="禹萱">禹萱</option>
+                            <option value="佩穎">佩穎</option>
+                            <option value="品如">品如</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="queryPacker">包貨人員：</label>
+                        <select id="queryPacker" class="form-control">
+                            <option value="">全部人員</option>
+                            <option value="儀君">儀君</option>
+                            <option value="婉容">婉容</option>
+                            <option value="艷秋">艷秋</option>
+                            <option value="禹萱">禹萱</option>
+                            <option value="佩穎">佩穎</option>
+                            <option value="品如">品如</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="filterRecords()">🔍 開始查詢</button>
+                    <button class="btn btn-success" onclick="exportCSV()">📥 匯出報表 (CSV)</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span>查詢結果</span>
+                    <span id="queryCountBadge" style="font-size: 14px; font-weight: normal; color: #64748b;">共 0 筆紀錄</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>序號</th>
+                                <th>精確包貨時間 (調監視器)</th>
+                                <th>物流管道</th>
+                                <th>寄件單號 / 條碼</th>
+                                <th>撿貨</th>
+                                <th>包貨</th>
+                                <th>備註</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queryList">
+                            <tr><td colspan="8" class="empty-msg">請設定條件後點擊開始查詢</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSuccessSound() {
+            initAudio();
+            const now = audioCtx.currentTime;
+            
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(1760, now);
+            gain1.gain.setValueAtTime(0.3, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.08);
+
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(2637, now + 0.1);
+            gain2.gain.setValueAtTime(0.3, now + 0.1);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.1);
+            osc2.stop(now + 0.2);
+        }
+
+        function playDuplicateSound() {
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(280, now);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.45);
+        }
+
+        function playErrorSound() {
+            initAudio();
+            const times = [0, 0.12, 0.24];
+            times.forEach(t => {
+                const now = audioCtx.currentTime + t;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(523.25, now);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            });
+        }
+
+        let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
+
+        const countElementMap = {
+            '蝦皮店到店': 'cnt-shopee', '7-11常溫': 'cnt-711',
+            '7-11冷凍': 'cnt-711-ice', '全家常溫': 'cnt-family',
+            '全家冷凍': 'cnt-family-ice', '新竹物流': 'cnt-hsinchu',
+            '大榮物流': 'cnt-kerry', '黑貓物流': 'cnt-blackcat'
+        };
+
+        const tagClassMap = {
+            '蝦皮店到店': 'tag-shopee', '7-11常溫': 'tag-711',
+            '7-11冷凍': 'tag-711-ice', '全家常溫': 'tag-family',
+            '全家冷凍': 'tag-family-ice', '新竹物流': 'tag-hsinchu',
+            '大榮物流': 'tag-kerry', '黑貓物流': 'tag-blackcat'
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('queryStartDate').value = todayStr;
+            document.getElementById('queryEndDate').value = todayStr;
+
+            updateStats();
+            renderScanRecentList();
+            
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            document.getElementById('barcodeInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processScan();
+                }
+            });
+        });
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
+                            String(now.getMinutes()).padStart(2, '0') + ':' + 
+                            String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('statusTimeDisplay').innerText = timeStr;
+        }
+
+        function saveRecords() {
+            localStorage.setItem('shipping_records', JSON.stringify(records));
+        }
+
+        function switchTab(tabId, btnElem) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btnElem.classList.add('active');
+
+            if (tabId === 'scan-tab') {
+                document.getElementById('barcodeInput').focus();
+            } else if (tabId === 'query-tab') {
+                filterRecords();
+            }
+        }
+
+        function processScan() {
+            initAudio();
+            const barcodeInput = document.getElementById('barcodeInput');
+            let barcode = barcodeInput.value.trim().toUpperCase();
+            const type = document.getElementById('shippingType').value;
+            const picker = document.getElementById('picker').value || '未選擇';
+            const packer = document.getElementById('packer').value || '未選擇';
+            const note = document.getElementById('note').value.trim();
+
+            if (type === '蝦皮店到店') {
+                const shopeeRegex = /^TW[A-Za-z0-9]{13}$/;
+                if (!shopeeRegex.test(barcode)) {
+                    playErrorSound();
+                    setStatusDisplay('error', '❌ 蝦皮條碼格式錯誤！必須為 TW 開頭且共 15 碼英數字！', `輸入碼: ${barcode || '空白'}`);
+                    barcodeInput.select();
+                    return;
+                }
+            } else {
+                if (!barcode || barcode.length < 5) {
+                    playErrorSound();
+                    setStatusDisplay('error', '⚠️ 條碼無效或未刷完整！長度過短。', `輸入碼: ${barcode || '空白'}`);
+                    barcodeInput.select();
+                    return;
+                }
+            }
+
+            const isDuplicate = records.some(r => r.barcode === barcode && r.status !== 'cancelled');
+            if (isDuplicate) {
+                playDuplicateSound();
+                const existItem = records.find(r => r.barcode === barcode && r.status !== 'cancelled');
+                setStatusDisplay('duplicate', `⚠️ 重複刷件警告！該包裹已於 ${existItem.timestamp.split(' ')[1]} 入檔過！`, `單號: ${barcode}`);
+                barcodeInput.select();
+                return;
+            }
+
+            playSuccessSound();
+            const now = new Date();
+            const timestamp = formatDateTime(now);
+            const dateStr = now.toISOString().split('T')[0];
+
+            const newRecord = {
+                id: Date.now(),
+                timestamp: timestamp,
+                date: dateStr,
+                type: type,
+                barcode: barcode,
+                picker: picker,
+                packer: packer,
+                note: note,
+                status: 'active'
+            };
+
+            records.unshift(newRecord);
+            saveRecords();
+
+            setStatusDisplay('success', `✅ 紀錄成功！[${type}] 撿:${picker} / 包:${packer}`, `單號: ${barcode}`);
+
+            barcodeInput.value = '';
+            document.getElementById('note').value = '';
+            barcodeInput.focus();
+
+            updateStats();
+            renderScanRecentList();
+        }
+
+        function setStatusDisplay(state, msg, detail = '') {
+            const statusBox = document.getElementById('statusMessage');
+            let icon = '🔊';
+            let classMap = {
+                'default': 'status-default',
+                'success': 'status-success',
+                'duplicate': 'status-duplicate',
+                'error': 'status-error'
+            };
+
+            if (state === 'success') icon = '✅';
+            if (state === 'duplicate') icon = '⚠️';
+            if (state === 'error') icon = '❌';
+
+            statusBox.className = `status-display ${classMap[state]}`;
+            statusBox.querySelector('.status-icon').innerText = icon;
+            statusBox.querySelector('.status-text').innerHTML = `${msg} <br><small style="font-size: 14px; opacity: 0.85;">${detail}</small>`;
+        }
+
+        function cancelRecord(id) {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+
+            if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
+                record.status = 'cancelled';
+                saveRecords();
+                updateStats();
+                renderScanRecentList();
+                
+                if (document.getElementById('query-tab').classList.contains('active')) {
+                    filterRecords();
+                }
+            }
+        }
+
+        function updateStats() {
+            const counts = {
+                '蝦皮店到店': 0, '7-11常溫': 0, '7-11冷凍': 0,
+                '全家常溫': 0, '全家冷凍': 0, '新竹物流': 0,
+                '大榮物流': 0, '黑貓物流': 0
+            };
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            records.forEach(r => {
+                if (r.date === todayStr && r.status !== 'cancelled') {
+                    if (counts[r.type] !== undefined) counts[r.type]++;
+                }
+            });
+
+            for (const [type, elemId] of Object.entries(countElementMap)) {
+                document.getElementById(elemId).innerText = counts[type];
+            }
+        }
+
+        function renderScanRecentList() {
+            const tbody = document.getElementById('scanRecentList');
+            const recentRecords = records.slice(0, 10);
+
+            if (recentRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">目前尚無出貨紀錄</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = recentRecords.map((r, index) => {
+                const isCancelled = r.status === 'cancelled';
+                const tagClass = tagClassMap[r.type] || 'tag-shopee';
+                return `
+                    <tr class="${isCancelled ? 'row-cancelled' : ''}">
+                        <td>${recentRecords.length - index}</td>
+                        <td><span class="time-badge">${r.timestamp}</span></td>
+                        <td><span class="tag-badge ${tagClass}">${r.type}</span></td>
+                        <td><strong style="letter-spacing: 0.5px;">${r.barcode}</strong></td>
+                        <td>${r.picker}</td>
+                        <td>${r.packer}</td>
+                        <td>${r.note || '-'}</td>
+                        <td>
+                            ${isCancelled 
+                                ? `<span class="badge-cancelled">已取消</span>` 
+                                : `<button class="btn-cancel" onclick="cancelRecord(${r.id})">取消出貨</button>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterRecords() {
+            const startDate = document.getElementById('queryStartDate').value;
+            const endDate = document.getElementById('queryEndDate').value;
+            const barcodeKey = document.getElementById('queryBarcode').value.trim().toLowerCase();
+            const typeKey = document.getElementById('queryType').value;
+            const pickerKey = document.getElementById('queryPicker').value;
+            const packerKey = document.getElementById('queryPacker').value;
+
+            const filtered = records.filter(r => {
+                if (startDate && r.date < startDate) return false;
+                if (endDate && r.date > endDate) return false;
+                if (barcodeKey && !r.barcode.toLowerCase().includes(barcodeKey)) return false;
+                if (typeKey && r.type !== typeKey) return false;
+                if (pickerKey && r.picker !== pickerKey) return false;
+                if (packerKey && r.packer !== packerKey) return false;
+                return true;
+            });
+
+            document.getElementById('queryCountBadge').innerText = `共 ${filtered.length} 筆紀錄`;
+            const tbody = document.getElementById('queryList');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">查無符合條件的出貨資料</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((r, index) => {
+                const isCancelled = r.status === 'cancelled';
+                const tagClass = tagClassMap[r.type] || 'tag-shopee';
+                return `
+                    <tr class="${isCancelled ? 'row-cancelled' : ''}">
+                        <td>${filtered.length - index}</td>
+                        <td><span class="time-badge">${r.timestamp}</span></td>
+                        <td><span class="tag-badge ${tagClass}">${r.type}</span></td>
+                        <td><strong style="letter-spacing: 0.5px;">${r.barcode}</strong></td>
+                        <td>${r.picker}</td>
+                        <td>${r.packer}</td>
+                        <td>${r.note || '-'}</td>
+                        <td>
+                            ${isCancelled 
+                                ? `<span class="badge-cancelled">已取消</span>` 
+                                : `<button class="btn-cancel" onclick="cancelRecord(${r.id})">取消出貨</button>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportCSV() {
+            if (records.length === 0) {
+                alert('目前沒有資料可匯出！');
+                return;
+            }
+
+            let csvContent = "\uFEFF序號,精確包貨時間,寄件方式,物流單號,撿貨人員,包貨人員,備註,狀態\n";
+
+            records.forEach((r, idx) => {
+                const statusStr = r.status === 'cancelled' ? '已取消' : '正常';
+                csvContent += `${records.length - idx},"${r.timestamp}","${r.type}","${r.barcode}","${r.picker}","${r.packer}","${r.note || ''}","${statusStr}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `包貨出貨紀錄_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function formatDateTime(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const hh = String(date.getHours()).padStart(2, '0');
+            const mm = String(date.getMinutes()).padStart(2, '0');
+            const ss = String(date.getSeconds()).padStart(2, '0');
+            return `${y}/${m}/${d} ${hh}:${mm}:${ss}`;
+        }
+    </script>
+</body>
+</html>
