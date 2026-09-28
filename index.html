@@ -463,10 +463,19 @@
     </div>
 
     <script>
-        // --- Supabase 初始化 ---
-        const SUPABASE_URL = 'https://qwsxcnrjwfmjnqxnehln.supabase.co'; // 請替換成您的 Supabase URL
-        const SUPABASE_KEY = 'sb_publishable_pRJ3GQPiIb3itDVN43sung_Xr2PFr2n'; // 請替換成您的 Supabase anon key
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- Supabase 安全初始化 ---
+        const SUPABASE_URL = 'https://qwsxcnrjwfmjnqxnehln.supabase.co';
+        // 請建議至 Supabase 的「Legacy anon, service_role API keys」標籤頁複製 Legacy anon key (eyJhbG...) 貼於下方
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3c3hjbnJqd2Ztam5xeG5laGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwOTQ5NTksImV4cCI6MjEwMzY3MDk1OX0.57X3XaRjLwTl7S_M59liGMXH_7Jqva-36zWVFR7WubA'; 
+
+        let supabase = null;
+        try {
+            if (window.supabase && window.supabase.createClient) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch (e) {
+            console.warn("Supabase 初始化跳過，系統將運作於單機模式:", e);
+        }
 
         let audioCtx = null;
 
@@ -543,7 +552,7 @@
             });
         }
 
-        let records = [];
+        let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
         let currentPage = 1;
         let pageSize = 20;
 
@@ -569,7 +578,12 @@
             document.getElementById('queryEndDate').value = todayStr;
 
             handlePlatformChange();
-            await fetchRecordsFromSupabase();
+            updateStats();
+            renderScanRecentList();
+
+            if (supabase) {
+                await fetchRecordsFromSupabase();
+            }
             
             setInterval(updateClock, 1000);
             updateClock();
@@ -584,14 +598,19 @@
             document.addEventListener('click', function(e) {
                 const numpad = document.getElementById('numpad');
                 const barcodeInput = document.getElementById('barcodeInput');
-                if (!numpad.contains(e.target) && e.target !== barcodeInput) {
+                if (numpad && barcodeInput && !numpad.contains(e.target) && e.target !== barcodeInput) {
                     toggleNumpad(false);
                 }
             });
         });
 
+        function saveLocalRecords() {
+            localStorage.setItem('shipping_records', JSON.stringify(records));
+        }
+
         // 從 Supabase 抓取歷史資料
         async function fetchRecordsFromSupabase() {
+            if (!supabase) return;
             try {
                 const { data, error } = await supabase
                     .from('shipping_records')
@@ -599,11 +618,14 @@
                     .order('id', { ascending: false });
 
                 if (error) throw error;
-                records = data || [];
-                updateStats();
-                renderScanRecentList();
+                if (data && data.length > 0) {
+                    records = data;
+                    saveLocalRecords();
+                    updateStats();
+                    renderScanRecentList();
+                }
             } catch (err) {
-                console.error('從 Supabase 讀取資料失敗:', err);
+                console.warn('讀取雲端資料庫失敗，使用本機資料:', err);
             }
         }
 
@@ -612,7 +634,8 @@
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
                             String(now.getMinutes()).padStart(2, '0') + ':' + 
                             String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('statusTimeDisplay').innerText = timeStr;
+            const timeDisplay = document.getElementById('statusTimeDisplay');
+            if (timeDisplay) timeDisplay.innerText = timeStr;
         }
 
         function handlePlatformChange() {
@@ -656,9 +679,9 @@
         function toggleNumpad(show) {
             const platform = document.getElementById('platformType').value;
             const numpad = document.getElementById('numpad');
-            if ((platform === '官網' || platform === '客戶私訂') && show) {
+            if (numpad && (platform === '官網' || platform === '客戶私訂') && show) {
                 numpad.style.display = 'block';
-            } else {
+            } else if (numpad) {
                 numpad.style.display = 'none';
             }
         }
@@ -790,34 +813,34 @@
                 status: 'active'
             };
 
-            // 存入 Supabase 資料庫
-            try {
-                const { error } = await supabase
-                    .from('shipping_records')
-                    .insert([newRecord]);
+            // 本機優先存入
+            records.unshift(newRecord);
+            saveLocalRecords();
 
-                if (error) throw error;
-
-                playSuccessSound();
-                records.unshift(newRecord);
-                setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
-
-                barcodeInput.value = '';
-                toggleNumpad(false);
-                if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
-
-                currentPage = 1;
-                updateStats();
-                renderScanRecentList();
-            } catch (err) {
-                console.error('寫入 Supabase 失敗:', err);
-                playErrorSound();
-                setStatusDisplay('error', '❌ 寫入雲端資料庫失敗，請檢查網路連線！', `單號/姓名: ${finalBarcode}`);
+            // 存入 Supabase 雲端
+            if (supabase) {
+                try {
+                    await supabase.from('shipping_records').insert([newRecord]);
+                } catch (err) {
+                    console.warn('雲端同步失敗，已儲存於本機:', err);
+                }
             }
+
+            playSuccessSound();
+            setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
+
+            barcodeInput.value = '';
+            toggleNumpad(false);
+            if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
+
+            currentPage = 1;
+            updateStats();
+            renderScanRecentList();
         }
 
         function setStatusDisplay(state, msg, detail = '') {
             const statusBox = document.getElementById('statusMessage');
+            if (!statusBox) return;
             let icon = '🔊';
             let classMap = {
                 'default': 'status-default',
@@ -840,24 +863,22 @@
             if (!record) return;
 
             if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號/姓名：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
-                try {
-                    const { error } = await supabase
-                        .from('shipping_records')
-                        .update({ status: 'cancelled' })
-                        .eq('id', id);
+                record.status = 'cancelled';
+                saveLocalRecords();
 
-                    if (error) throw error;
-
-                    record.status = 'cancelled';
-                    updateStats();
-                    renderScanRecentList();
-                    
-                    if (document.getElementById('query-tab').classList.contains('active')) {
-                        filterRecords();
+                if (supabase) {
+                    try {
+                        await supabase.from('shipping_records').update({ status: 'cancelled' }).eq('id', id);
+                    } catch (err) {
+                        console.warn('雲端取消更新失敗，已於本機標示廢單:', err);
                     }
-                } catch (err) {
-                    console.error('更新 Supabase 廢單狀態失敗:', err);
-                    alert('更新資料庫失敗，請再試一次');
+                }
+
+                updateStats();
+                renderScanRecentList();
+                
+                if (document.getElementById('query-tab').classList.contains('active')) {
+                    filterRecords();
                 }
             }
         }
@@ -880,12 +901,15 @@
             });
 
             for (const [type, elemId] of Object.entries(countElementMap)) {
-                document.getElementById(elemId).innerText = counts[type];
+                const elem = document.getElementById(elemId);
+                if (elem) elem.innerText = counts[type];
             }
         }
 
         function renderScanRecentList() {
             const tbody = document.getElementById('scanRecentList');
+            if (!tbody) return;
+
             const totalCount = records.length;
             const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
