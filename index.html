@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>出貨錄影時間紀錄系統</title>
+    <!-- 載入 Supabase JS SDK CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary-color: #1e293b;
@@ -461,6 +463,11 @@
     </div>
 
     <script>
+        // --- Supabase 初始化 ---
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // 請替換成您的 Supabase URL
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // 請替換成您的 Supabase anon key
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let audioCtx = null;
 
         function initAudio() {
@@ -536,8 +543,7 @@
             });
         }
 
-        let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
-
+        let records = [];
         let currentPage = 1;
         let pageSize = 20;
 
@@ -557,14 +563,13 @@
             '客戶私訂': 'tag-private'
         };
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             const todayStr = new Date().toISOString().split('T')[0];
             document.getElementById('queryStartDate').value = todayStr;
             document.getElementById('queryEndDate').value = todayStr;
 
-            updateStats();
-            renderScanRecentList();
             handlePlatformChange();
+            await fetchRecordsFromSupabase();
             
             setInterval(updateClock, 1000);
             updateClock();
@@ -576,7 +581,6 @@
                 }
             });
 
-            // 點擊頁面其他空白處關閉懸浮數字鍵盤
             document.addEventListener('click', function(e) {
                 const numpad = document.getElementById('numpad');
                 const barcodeInput = document.getElementById('barcodeInput');
@@ -586,16 +590,29 @@
             });
         });
 
+        // 從 Supabase 抓取歷史資料
+        async function fetchRecordsFromSupabase() {
+            try {
+                const { data, error } = await supabase
+                    .from('shipping_records')
+                    .select('*')
+                    .order('id', { ascending: false });
+
+                if (error) throw error;
+                records = data || [];
+                updateStats();
+                renderScanRecentList();
+            } catch (err) {
+                console.error('從 Supabase 讀取資料失敗:', err);
+            }
+        }
+
         function updateClock() {
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
                             String(now.getMinutes()).padStart(2, '0') + ':' + 
                             String(now.getSeconds()).padStart(2, '0');
             document.getElementById('statusTimeDisplay').innerText = timeStr;
-        }
-
-        function saveRecords() {
-            localStorage.setItem('shipping_records', JSON.stringify(records));
         }
 
         function handlePlatformChange() {
@@ -610,14 +627,14 @@
                 inputLabel.innerText = "請使用懸浮數字鍵盤輸入官網訂單編號 (4碼數字)：";
                 inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，防止系統內建鍵盤遮擋畫面";
                 inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
-                inputElem.readOnly = true; // 阻擋平板內建鍵盤彈出
+                inputElem.readOnly = true;
             } else if (platform === '客戶私訂') {
                 inputLabel.innerText = "請使用懸浮數字鍵盤輸入私訂數字編號：";
                 inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，請輸入設定之數字編號";
                 inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
-                inputElem.readOnly = true; // 阻擋平板內建鍵盤彈出
+                inputElem.readOnly = true;
             } else {
-                inputElem.readOnly = false; // 條碼槍掃描模式（阻擋平板軟體鍵盤，但接受條碼槍刷入）
+                inputElem.readOnly = false;
                 if (platform === '蝦皮') {
                     inputLabel.innerText = "請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：";
                     inputHint.innerText = "💡 提示：必須為 14 碼大寫英數字組合";
@@ -636,7 +653,6 @@
             inputElem.focus();
         }
 
-        // 控制懸浮數字鍵盤顯隱（僅官網與客戶私訂觸發）
         function toggleNumpad(show) {
             const platform = document.getElementById('platformType').value;
             const numpad = document.getElementById('numpad');
@@ -647,7 +663,6 @@
             }
         }
 
-        // 懸浮鍵盤按鈕點擊事件
         function pressNum(val) {
             const inputElem = document.getElementById('barcodeInput');
             const platform = document.getElementById('platformType').value;
@@ -657,7 +672,6 @@
             } else if (val === 'DEL') {
                 inputElem.value = inputElem.value.slice(0, -1);
             } else {
-                // 官網限制最大 4 碼，客戶私訂則無限制長度
                 if (platform === '官網') {
                     if (inputElem.value.length < 4) inputElem.value += val;
                 } else {
@@ -685,7 +699,7 @@
             }
         }
 
-        function processScan() {
+        async function processScan() {
             initAudio();
             const barcodeInput = document.getElementById('barcodeInput');
             let rawValue = barcodeInput.value.trim();
@@ -761,7 +775,6 @@
                 return;
             }
 
-            playSuccessSound();
             const now = new Date();
             const timestamp = formatDateTime(now);
             const dateStr = now.toISOString().split('T')[0];
@@ -777,18 +790,30 @@
                 status: 'active'
             };
 
-            records.unshift(newRecord);
-            saveRecords();
+            // 存入 Supabase 資料庫
+            try {
+                const { error } = await supabase
+                    .from('shipping_records')
+                    .insert([newRecord]);
 
-            setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
+                if (error) throw error;
 
-            barcodeInput.value = '';
-            toggleNumpad(false);
-            if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
+                playSuccessSound();
+                records.unshift(newRecord);
+                setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
 
-            currentPage = 1;
-            updateStats();
-            renderScanRecentList();
+                barcodeInput.value = '';
+                toggleNumpad(false);
+                if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
+
+                currentPage = 1;
+                updateStats();
+                renderScanRecentList();
+            } catch (err) {
+                console.error('寫入 Supabase 失敗:', err);
+                playErrorSound();
+                setStatusDisplay('error', '❌ 寫入雲端資料庫失敗，請檢查網路連線！', `單號/姓名: ${finalBarcode}`);
+            }
         }
 
         function setStatusDisplay(state, msg, detail = '') {
@@ -810,18 +835,29 @@
             statusBox.querySelector('.status-text').innerHTML = `${msg} <br><span class="status-detail-text">${detail}</span>`;
         }
 
-        function cancelRecord(id) {
+        async function cancelRecord(id) {
             const record = records.find(r => r.id === id);
             if (!record) return;
 
             if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號/姓名：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
-                record.status = 'cancelled';
-                saveRecords();
-                updateStats();
-                renderScanRecentList();
-                
-                if (document.getElementById('query-tab').classList.contains('active')) {
-                    filterRecords();
+                try {
+                    const { error } = await supabase
+                        .from('shipping_records')
+                        .update({ status: 'cancelled' })
+                        .eq('id', id);
+
+                    if (error) throw error;
+
+                    record.status = 'cancelled';
+                    updateStats();
+                    renderScanRecentList();
+                    
+                    if (document.getElementById('query-tab').classList.contains('active')) {
+                        filterRecords();
+                    }
+                } catch (err) {
+                    console.error('更新 Supabase 廢單狀態失敗:', err);
+                    alert('更新資料庫失敗，請再試一次');
                 }
             }
         }
