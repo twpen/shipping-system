@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>出貨錄影時間紀錄系統</title>
-    <!-- 使用專為瀏覽器設計的 UNPKG UMD CDN 載入 Supabase SDK -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary-color: #1e293b;
@@ -463,103 +461,83 @@
     </div>
 
     <script>
-        // --- Supabase 初始化 ---
-        const SUPABASE_URL = 'https://qwsxcnrjwfmjnqxnehln.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_pRJ3GQPiIb3itDVN43sung_Xr2PFr2n';
-
-        let supabase = null;
-        try {
-            if (typeof supabase !== 'undefined' && supabase.createClient) {
-                supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            } else if (window.supabase && window.supabase.createClient) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            }
-        } catch (e) {
-            console.warn("Supabase 連線失敗，切換至單機防護模式:", e);
-        }
-
         let audioCtx = null;
 
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (audioCtx && audioCtx.state === 'suspended') {
+            if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
         }
 
         function playSuccessSound() {
-            try {
-                initAudio();
-                const now = audioCtx.currentTime;
-                
-                const osc1 = audioCtx.createOscillator();
-                const gain1 = audioCtx.createGain();
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(1760, now);
-                gain1.gain.setValueAtTime(0.3, now);
-                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                osc1.connect(gain1);
-                gain1.connect(audioCtx.destination);
-                osc1.start(now);
-                osc1.stop(now + 0.08);
+            initAudio();
+            const now = audioCtx.currentTime;
+            
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(1760, now);
+            gain1.gain.setValueAtTime(0.3, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.08);
 
-                const osc2 = audioCtx.createOscillator();
-                const gain2 = audioCtx.createGain();
-                osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(2637, now + 0.1);
-                gain2.gain.setValueAtTime(0.3, now + 0.1);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc2.connect(gain2);
-                gain2.connect(audioCtx.destination);
-                osc2.start(now + 0.1);
-                osc2.stop(now + 0.2);
-            } catch(e) {}
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(2637, now + 0.1);
+            gain2.gain.setValueAtTime(0.3, now + 0.1);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.1);
+            osc2.stop(now + 0.2);
         }
 
         function playDuplicateSound() {
-            try {
-                initAudio();
-                const now = audioCtx.currentTime;
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(280, now);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.45);
+        }
+
+        function playErrorSound() {
+            initAudio();
+            const times = [0, 0.12, 0.24];
+            times.forEach(t => {
+                const now = audioCtx.currentTime + t;
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(280, now);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(523.25, now);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
                 
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start(now);
-                osc.stop(now + 0.45);
-            } catch(e) {}
-        }
-
-        function playErrorSound() {
-            try {
-                initAudio();
-                const times = [0, 0.12, 0.24];
-                times.forEach(t => {
-                    const now = audioCtx.currentTime + t;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    gain.gain.setValueAtTime(0.3, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                    
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                });
-            } catch(e) {}
+                osc.stop(now + 0.08);
+            });
         }
 
         let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
+
         let currentPage = 1;
         let pageSize = 20;
 
@@ -579,80 +557,49 @@
             '客戶私訂': 'tag-private'
         };
 
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', () => {
             const todayStr = new Date().toISOString().split('T')[0];
-            const startDateElem = document.getElementById('queryStartDate');
-            const endDateElem = document.getElementById('queryEndDate');
-            if (startDateElem) startDateElem.value = todayStr;
-            if (endDateElem) endDateElem.value = todayStr;
+            document.getElementById('queryStartDate').value = todayStr;
+            document.getElementById('queryEndDate').value = todayStr;
 
-            handlePlatformChange();
             updateStats();
             renderScanRecentList();
-
-            if (supabase) {
-                await fetchRecordsFromSupabase();
-            }
+            handlePlatformChange();
             
             setInterval(updateClock, 1000);
             updateClock();
 
-            const barcodeInput = document.getElementById('barcodeInput');
-            if (barcodeInput) {
-                barcodeInput.addEventListener('keypress', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        processScan();
-                    }
-                });
-            }
+            document.getElementById('barcodeInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processScan();
+                }
+            });
 
+            // 點擊頁面其他空白處關閉懸浮數字鍵盤
             document.addEventListener('click', function(e) {
                 const numpad = document.getElementById('numpad');
                 const barcodeInput = document.getElementById('barcodeInput');
-                if (numpad && barcodeInput && !numpad.contains(e.target) && e.target !== barcodeInput) {
+                if (!numpad.contains(e.target) && e.target !== barcodeInput) {
                     toggleNumpad(false);
                 }
             });
         });
-
-        function saveLocalRecords() {
-            localStorage.setItem('shipping_records', JSON.stringify(records));
-        }
-
-        async function fetchRecordsFromSupabase() {
-            if (!supabase) return;
-            try {
-                const { data, error } = await supabase
-                    .from('shipping_records')
-                    .select('*')
-                    .order('id', { ascending: false });
-
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    records = data;
-                    saveLocalRecords();
-                    updateStats();
-                    renderScanRecentList();
-                }
-            } catch (err) {
-                console.warn('雲端資料抓取異常:', err);
-            }
-        }
 
         function updateClock() {
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
                             String(now.getMinutes()).padStart(2, '0') + ':' + 
                             String(now.getSeconds()).padStart(2, '0');
-            const timeDisplay = document.getElementById('statusTimeDisplay');
-            if (timeDisplay) timeDisplay.innerText = timeStr;
+            document.getElementById('statusTimeDisplay').innerText = timeStr;
+        }
+
+        function saveRecords() {
+            localStorage.setItem('shipping_records', JSON.stringify(records));
         }
 
         function handlePlatformChange() {
-            const platformElem = document.getElementById('platformType');
-            if (!platformElem) return;
-            const platform = platformElem.value;
+            const platform = document.getElementById('platformType').value;
             const inputLabel = document.getElementById('inputLabel');
             const inputHint = document.getElementById('inputHint');
             const inputElem = document.getElementById('barcodeInput');
@@ -660,64 +607,57 @@
             toggleNumpad(false);
 
             if (platform === '官網') {
-                if (inputLabel) inputLabel.innerText = "請使用懸浮數字鍵盤輸入官網訂單編號 (4碼數字)：";
-                if (inputHint) inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，防止系統內建鍵盤遮擋畫面";
-                if (inputElem) {
-                    inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
-                    inputElem.readOnly = true;
-                }
+                inputLabel.innerText = "請使用懸浮數字鍵盤輸入官網訂單編號 (4碼數字)：";
+                inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，防止系統內建鍵盤遮擋畫面";
+                inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
+                inputElem.readOnly = true; // 阻擋平板內建鍵盤彈出
             } else if (platform === '客戶私訂') {
-                if (inputLabel) inputLabel.innerText = "請使用懸浮數字鍵盤輸入私訂數字編號：";
-                if (inputHint) inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，請輸入設定之數字編號";
-                if (inputElem) {
-                    inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
-                    inputElem.readOnly = true;
-                }
+                inputLabel.innerText = "請使用懸浮數字鍵盤輸入私訂數字編號：";
+                inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，請輸入設定之數字編號";
+                inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
+                inputElem.readOnly = true; // 阻擋平板內建鍵盤彈出
             } else {
-                if (inputElem) inputElem.readOnly = false;
+                inputElem.readOnly = false; // 條碼槍掃描模式（阻擋平板軟體鍵盤，但接受條碼槍刷入）
                 if (platform === '蝦皮') {
-                    if (inputLabel) inputLabel.innerText = "請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：";
-                    if (inputHint) inputHint.innerText = "💡 提示：必須為 14 碼大寫英數字組合";
-                    if (inputElem) inputElem.placeholder = "請使用條碼槍掃描 14 碼訂單號...";
+                    inputLabel.innerText = "請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：";
+                    inputHint.innerText = "💡 提示：必須為 14 碼大寫英數字組合";
+                    inputElem.placeholder = "請使用條碼槍掃描 14 碼訂單號...";
                 } else if (platform === 'iOPEN Mall 常溫') {
-                    if (inputLabel) inputLabel.innerText = "請掃描 iOPEN Mall 常溫寄件單條碼：";
-                    if (inputHint) inputHint.innerText = "💡 提示：支援 7-11 常溫 JSON 條碼，自動解析 code2";
-                    if (inputElem) inputElem.placeholder = "對準條碼槍刷入即可...";
+                    inputLabel.innerText = "請掃描 iOPEN Mall 常溫寄件單條碼：";
+                    inputHint.innerText = "💡 提示：支援 7-11 常溫 JSON 條碼，自動解析 code2";
+                    inputElem.placeholder = "對準條碼槍刷入即可...";
                 } else if (platform === 'iOPEN Mall 冷凍') {
-                    if (inputLabel) inputLabel.innerText = "請掃描 iOPEN Mall 冷凍寄件單條碼 (20碼英數字)：";
-                    if (inputHint) inputHint.innerText = "💡 提示：必須為 20 碼英數字組合";
-                    if (inputElem) inputElem.placeholder = "請使用條碼槍掃描 20 碼條碼...";
+                    inputLabel.innerText = "請掃描 iOPEN Mall 冷凍寄件單條碼 (20碼英數字)：";
+                    inputHint.innerText = "💡 提示：必須為 20 碼英數字組合";
+                    inputElem.placeholder = "請使用條碼槍掃描 20 碼條碼...";
                 }
             }
-            if (inputElem) {
-                inputElem.value = '';
-                inputElem.focus();
-            }
+            inputElem.value = '';
+            inputElem.focus();
         }
 
+        // 控制懸浮數字鍵盤顯隱（僅官網與客戶私訂觸發）
         function toggleNumpad(show) {
-            const platformElem = document.getElementById('platformType');
-            if (!platformElem) return;
-            const platform = platformElem.value;
+            const platform = document.getElementById('platformType').value;
             const numpad = document.getElementById('numpad');
-            if (numpad && (platform === '官網' || platform === '客戶私訂') && show) {
+            if ((platform === '官網' || platform === '客戶私訂') && show) {
                 numpad.style.display = 'block';
-            } else if (numpad) {
+            } else {
                 numpad.style.display = 'none';
             }
         }
 
+        // 懸浮鍵盤按鈕點擊事件
         function pressNum(val) {
             const inputElem = document.getElementById('barcodeInput');
-            const platformElem = document.getElementById('platformType');
-            if (!inputElem || !platformElem) return;
-            const platform = platformElem.value;
+            const platform = document.getElementById('platformType').value;
 
             if (val === 'C') {
                 inputElem.value = '';
             } else if (val === 'DEL') {
                 inputElem.value = inputElem.value.slice(0, -1);
             } else {
+                // 官網限制最大 4 碼，客戶私訂則無限制長度
                 if (platform === '官網') {
                     if (inputElem.value.length < 4) inputElem.value += val;
                 } else {
@@ -735,22 +675,19 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             
-            const targetTab = document.getElementById(tabId);
-            if (targetTab) targetTab.classList.add('active');
-            if (btnElem) btnElem.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            btnElem.classList.add('active');
 
             if (tabId === 'scan-tab') {
-                const inputElem = document.getElementById('barcodeInput');
-                if (inputElem) inputElem.focus();
+                document.getElementById('barcodeInput').focus();
             } else if (tabId === 'query-tab') {
                 filterRecords();
             }
         }
 
-        async function processScan() {
+        function processScan() {
             initAudio();
             const barcodeInput = document.getElementById('barcodeInput');
-            if (!barcodeInput) return;
             let rawValue = barcodeInput.value.trim();
             const platform = document.getElementById('platformType').value;
             const picker = document.getElementById('picker').value || '未選擇';
@@ -824,6 +761,7 @@
                 return;
             }
 
+            playSuccessSound();
             const now = new Date();
             const timestamp = formatDateTime(now);
             const dateStr = now.toISOString().split('T')[0];
@@ -840,17 +778,8 @@
             };
 
             records.unshift(newRecord);
-            saveLocalRecords();
+            saveRecords();
 
-            if (supabase) {
-                try {
-                    await supabase.from('shipping_records').insert([newRecord]);
-                } catch (err) {
-                    console.warn('雲端儲存異常，已存於本機:', err);
-                }
-            }
-
-            playSuccessSound();
             setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
 
             barcodeInput.value = '';
@@ -864,7 +793,6 @@
 
         function setStatusDisplay(state, msg, detail = '') {
             const statusBox = document.getElementById('statusMessage');
-            if (!statusBox) return;
             let icon = '🔊';
             let classMap = {
                 'default': 'status-default',
@@ -882,22 +810,13 @@
             statusBox.querySelector('.status-text').innerHTML = `${msg} <br><span class="status-detail-text">${detail}</span>`;
         }
 
-        async function cancelRecord(id) {
+        function cancelRecord(id) {
             const record = records.find(r => r.id === id);
             if (!record) return;
 
             if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號/姓名：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
                 record.status = 'cancelled';
-                saveLocalRecords();
-
-                if (supabase) {
-                    try {
-                        await supabase.from('shipping_records').update({ status: 'cancelled' }).eq('id', id);
-                    } catch (err) {
-                        console.warn('雲端廢單更新異常:', err);
-                    }
-                }
-
+                saveRecords();
                 updateStats();
                 renderScanRecentList();
                 
@@ -925,15 +844,12 @@
             });
 
             for (const [type, elemId] of Object.entries(countElementMap)) {
-                const elem = document.getElementById(elemId);
-                if (elem) elem.innerText = counts[type];
+                document.getElementById(elemId).innerText = counts[type];
             }
         }
 
         function renderScanRecentList() {
             const tbody = document.getElementById('scanRecentList');
-            if (!tbody) return;
-
             const totalCount = records.length;
             const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
@@ -945,12 +861,9 @@
 
             if (records.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">目前尚無出貨紀錄</td></tr>`;
-                const pageInfo = document.getElementById('pageInfo');
-                if (pageInfo) pageInfo.innerText = `第 1 / 1 頁，共 0 筆`;
-                const prevBtn = document.getElementById('btnPrevPage');
-                const nextBtn = document.getElementById('btnNextPage');
-                if (prevBtn) prevBtn.disabled = true;
-                if (nextBtn) nextBtn.disabled = true;
+                document.getElementById('pageInfo').innerText = `第 1 / 1 頁，共 0 筆`;
+                document.getElementById('btnPrevPage').disabled = true;
+                document.getElementById('btnNextPage').disabled = true;
                 return;
             }
 
@@ -976,21 +889,15 @@
                 `;
             }).join('');
 
-            const pageInfo = document.getElementById('pageInfo');
-            if (pageInfo) pageInfo.innerText = `第 ${currentPage} / ${totalPages} 頁，共 ${totalCount} 筆`;
-            const prevBtn = document.getElementById('btnPrevPage');
-            const nextBtn = document.getElementById('btnNextPage');
-            if (prevBtn) prevBtn.disabled = (currentPage === 1);
-            if (nextBtn) nextBtn.disabled = (currentPage >= totalPages);
+            document.getElementById('pageInfo').innerText = `第 ${currentPage} / ${totalPages} 頁，共 ${totalCount} 筆`;
+            document.getElementById('btnPrevPage').disabled = (currentPage === 1);
+            document.getElementById('btnNextPage').disabled = (currentPage >= totalPages);
         }
 
         function changePageSize() {
-            const selectElem = document.getElementById('pageSizeSelect');
-            if (selectElem) {
-                pageSize = parseInt(selectElem.value);
-                currentPage = 1;
-                renderScanRecentList();
-            }
+            pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+            currentPage = 1;
+            renderScanRecentList();
         }
 
         function prevPage() {
@@ -1026,10 +933,8 @@
                 return true;
             });
 
-            const badgeElem = document.getElementById('queryCountBadge');
-            if (badgeElem) badgeElem.innerText = `共 ${filtered.length} 筆紀錄`;
+            document.getElementById('queryCountBadge').innerText = `共 ${filtered.length} 筆紀錄`;
             const tbody = document.getElementById('queryList');
-            if (!tbody) return;
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">查無符合條件的出貨資料</td></tr>`;
