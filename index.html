@@ -16,13 +16,11 @@
             --card-bg: #ffffff;
             --border-color: #e2e8f0;
             
-            /* 物流專屬配色 */
+            /* 平台專屬配色 */
             --tag-shopee: #ff5722;
-            --tag-711: #008000;
-            --tag-family: #00a0e9;
-            --tag-hsinchu: #003399;
-            --tag-kerry: #e60012;
-            --tag-blackcat: #f39c12;
+            --tag-iopen: #008000;
+            --tag-official: #2563eb;
+            --tag-private: #7c3aed;
         }
 
         * { box-sizing: border-box; font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
@@ -60,10 +58,8 @@
             padding-bottom: 10px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; 
         }
 
-        /* 現場包貨 網格配置 */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
         
-        /* 歷史查詢 專用兩行網格 (改為 3 欄式配置，極致舒適不擁擠) */
         .query-form-grid { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
@@ -124,24 +120,20 @@
         .status-duplicate { background-color: #fef3c7; color: #78350f; border-left: 8px solid var(--warning-color); }
         .status-error { background-color: #fee2e2; color: #7f1d1d; border-left: 8px solid var(--danger-color); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-top: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 10px; }
         .stat-card { 
             border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 10px; text-align: center; 
             background-color: #ffffff; transition: transform 0.2s, box-shadow 0.2s;
         }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .stat-card .title { font-size: 13px; color: #64748b; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .stat-card .count { font-size: 26px; font-weight: 800; color: #0f172a; }
+        .stat-card .title { font-size: 14px; color: #64748b; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .stat-card .count { font-size: 28px; font-weight: 800; color: #0f172a; }
 
         .tag-badge { padding: 4px 10px; border-radius: 20px; color: white; font-size: 12px; font-weight: bold; display: inline-block; }
         .tag-shopee { background-color: var(--tag-shopee); }
-        .tag-711 { background-color: var(--tag-711); }
-        .tag-711-ice { background-color: #00a896; }
-        .tag-family { background-color: var(--tag-family); }
-        .tag-family-ice { background-color: #028090; }
-        .tag-hsinchu { background-color: var(--tag-hsinchu); }
-        .tag-kerry { background-color: var(--tag-kerry); }
-        .tag-blackcat { background-color: var(--tag-blackcat); color: #000; }
+        .tag-iopen { background-color: var(--tag-iopen); }
+        .tag-official { background-color: var(--tag-official); }
+        .tag-private { background-color: var(--tag-private); }
 
         .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
         .data-table { width: 100%; border-collapse: collapse; font-size: 14px; background-color: #fff; }
@@ -156,6 +148,7 @@
         .row-cancelled .time-badge { text-decoration: line-through; opacity: 0.5; }
 
         .empty-msg { text-align: center; color: #94a3b8; padding: 40px; font-size: 15px; font-weight: 500; }
+        .hint-text { font-size: 13px; color: #64748b; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -178,19 +171,15 @@
         <div id="scan-tab" class="tab-content active">
             
             <div class="card">
-                <div class="card-title">1. 出貨種類與人員設定</div>
+                <div class="card-title">1. 出貨平台與人員設定</div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="shippingType">物流方式：</label>
-                        <select id="shippingType" class="form-control">
-                            <option value="蝦皮店到店">蝦皮店到店</option>
-                            <option value="7-11常溫">7-11 常溫</option>
-                            <option value="7-11冷凍">7-11 冷凍</option>
-                            <option value="全家常溫">全家 常溫</option>
-                            <option value="全家冷凍">全家 冷凍</option>
-                            <option value="新竹物流">新竹物流</option>
-                            <option value="大榮物流">大榮物流</option>
-                            <option value="黑貓物流">黑貓物流</option>
+                        <label for="platformType">訂單來源平台：</label>
+                        <select id="platformType" class="form-control" onchange="handlePlatformChange()">
+                            <option value="蝦皮">蝦皮 (Shopee)</option>
+                            <option value="iOPEN Mall">iOPEN Mall</option>
+                            <option value="官網">官網 (Official Site)</option>
+                            <option value="客戶私訂">客戶私訂</option>
                         </select>
                     </div>
 
@@ -223,13 +212,14 @@
             </div>
 
             <div class="card">
-                <div class="card-title">2. 掃描條碼區</div>
+                <div class="card-title">2. 刷單與輸入區</div>
                 <div class="form-group">
-                    <label for="barcodeInput">請使用條碼槍對準包裹單號掃描：</label>
+                    <label for="barcodeInput" id="inputLabel">請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：</label>
                     <div class="barcode-input-wrapper">
-                        <input type="text" id="barcodeInput" class="form-control" placeholder="等待條碼刷入中..." autofocus autocomplete="off">
-                        <button class="btn btn-success" onclick="processScan()">輸入</button>
+                        <input type="text" id="barcodeInput" class="form-control" placeholder="請掃描或輸入..." autofocus autocomplete="off">
+                        <button class="btn btn-success" onclick="processScan()">記錄單號</button>
                     </div>
+                    <div class="hint-text" id="inputHint">💡 提示：蝦皮需為 14 碼大寫英數字組合</div>
                 </div>
 
                 <div class="form-group" style="margin-top: 14px;">
@@ -239,22 +229,18 @@
 
                 <div id="statusMessage" class="status-display status-default">
                     <div class="status-icon">🔊</div>
-                    <div class="status-text">音效與驗證就緒，請開始掃描包裹條碼</div>
+                    <div class="status-text">系統就緒，請刷入或手動填寫訂單單號</div>
                     <div class="status-time" id="statusTimeDisplay">--:--:--</div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">今日各物流已包件數</div>
+                <div class="card-title">今日四大平台已包件數</div>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="title"><span class="tag-badge tag-shopee">蝦皮</span></div><div class="count" id="cnt-shopee">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-711">7-11常溫</span></div><div class="count" id="cnt-711">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-711-ice">7-11冷凍</span></div><div class="count" id="cnt-711-ice">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-family">全家常溫</span></div><div class="count" id="cnt-family">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-family-ice">全家冷凍</span></div><div class="count" id="cnt-family-ice">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-hsinchu">新竹物流</span></div><div class="count" id="cnt-hsinchu">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-kerry">大榮物流</span></div><div class="count" id="cnt-kerry">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-blackcat">黑貓物流</span></div><div class="count" id="cnt-blackcat">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen">iOPEN Mall</span></div><div class="count" id="cnt-iopen">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-official">官網</span></div><div class="count" id="cnt-official">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-private">客戶私訂</span></div><div class="count" id="cnt-private">0</div></div>
                 </div>
             </div>
 
@@ -265,9 +251,9 @@
                         <thead>
                             <tr>
                                 <th>序號</th>
-                                <th>精確包貨時間 (用於調監視器)</th>
-                                <th>物流管道</th>
-                                <th>寄件單號 / 條碼</th>
+                                <th>包貨時間</th>
+                                <th>平台來源</th>
+                                <th>訂單編號 / 寄件條碼</th>
                                 <th>撿貨</th>
                                 <th>包貨</th>
                                 <th>備註</th>
@@ -282,13 +268,12 @@
             </div>
         </div>
 
-        <!-- 分頁二：包裹歷史查詢 (已優化兩行式配置) -->
+        <!-- 分頁二：包裹歷史查詢 -->
         <div id="query-tab" class="tab-content">
             <div class="card">
                 <div class="card-title">歷史包裹時間查詢</div>
                 
                 <div class="query-form-grid">
-                    <!-- 第一行：日期區間、搜尋單號、物流種類 -->
                     <div class="form-group">
                         <label>出貨日期區間：</label>
                         <div class="date-range-group">
@@ -299,26 +284,21 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="queryBarcode">搜尋單號 / 關鍵字：</label>
+                        <label for="queryBarcode">搜尋單號 / 客人姓名：</label>
                         <input type="text" id="queryBarcode" class="form-control" placeholder="輸入單號關鍵字...">
                     </div>
 
                     <div class="form-group">
-                        <label for="queryType">物流方式：</label>
-                        <select id="queryType" class="form-control">
-                            <option value="">全部分類</option>
-                            <option value="蝦皮店到店">蝦皮店到店</option>
-                            <option value="7-11常溫">7-11 常溫</option>
-                            <option value="7-11冷凍">7-11 冷凍</option>
-                            <option value="全家常溫">全家 常溫</option>
-                            <option value="全家冷凍">全家 冷凍</option>
-                            <option value="新竹物流">新竹物流</option>
-                            <option value="大榮物流">大榮物流</option>
-                            <option value="黑貓物流">黑貓物流</option>
+                        <label for="queryPlatform">訂單平台：</label>
+                        <select id="queryPlatform" class="form-control">
+                            <option value="">全部平台</option>
+                            <option value="蝦皮">蝦皮</option>
+                            <option value="iOPEN Mall">iOPEN Mall</option>
+                            <option value="官網">官網</option>
+                            <option value="客戶私訂">客戶私訂</option>
                         </select>
                     </div>
 
-                    <!-- 第二行：撿貨人員、包貨人員 -->
                     <div class="form-group">
                         <label for="queryPicker">撿貨人員：</label>
                         <select id="queryPicker" class="form-control">
@@ -362,9 +342,9 @@
                         <thead>
                             <tr>
                                 <th>序號</th>
-                                <th>精確包貨時間 (調監視器)</th>
-                                <th>物流管道</th>
-                                <th>寄件單號 / 條碼</th>
+                                <th>包貨時間</th>
+                                <th>平台來源</th>
+                                <th>訂單編號 / 寄件條碼</th>
                                 <th>撿貨</th>
                                 <th>包貨</th>
                                 <th>備註</th>
@@ -459,17 +439,17 @@
         let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
 
         const countElementMap = {
-            '蝦皮店到店': 'cnt-shopee', '7-11常溫': 'cnt-711',
-            '7-11冷凍': 'cnt-711-ice', '全家常溫': 'cnt-family',
-            '全家冷凍': 'cnt-family-ice', '新竹物流': 'cnt-hsinchu',
-            '大榮物流': 'cnt-kerry', '黑貓物流': 'cnt-blackcat'
+            '蝦皮': 'cnt-shopee', 
+            'iOPEN Mall': 'cnt-iopen', 
+            '官網': 'cnt-official', 
+            '客戶私訂': 'cnt-private'
         };
 
         const tagClassMap = {
-            '蝦皮店到店': 'tag-shopee', '7-11常溫': 'tag-711',
-            '7-11冷凍': 'tag-711-ice', '全家常溫': 'tag-family',
-            '全家冷凍': 'tag-family-ice', '新竹物流': 'tag-hsinchu',
-            '大榮物流': 'tag-kerry', '黑貓物流': 'tag-blackcat'
+            '蝦皮': 'tag-shopee', 
+            'iOPEN Mall': 'tag-iopen', 
+            '官網': 'tag-official', 
+            '客戶私訂': 'tag-private'
         };
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -479,6 +459,7 @@
 
             updateStats();
             renderScanRecentList();
+            handlePlatformChange();
             
             setInterval(updateClock, 1000);
             updateClock();
@@ -503,6 +484,34 @@
             localStorage.setItem('shipping_records', JSON.stringify(records));
         }
 
+        // 當切換平台時，動態更新提示文字與防呆規則
+        function handlePlatformChange() {
+            const platform = document.getElementById('platformType').value;
+            const inputLabel = document.getElementById('inputLabel');
+            const inputHint = document.getElementById('inputHint');
+            const inputElem = document.getElementById('barcodeInput');
+
+            if (platform === '蝦皮') {
+                inputLabel.innerText = "請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：";
+                inputHint.innerText = "💡 提示：必須為 14 碼大寫英數字組合";
+                inputElem.placeholder = "請使用條碼槍掃描 14 碼訂單號...";
+            } else if (platform === 'iOPEN Mall') {
+                inputLabel.innerText = "請掃描 iOPEN Mall 寄件單條碼：";
+                inputHint.innerText = "💡 提示：支援 JSON 格式掃描，自動提取 code2 短單號";
+                inputElem.placeholder = "對準條碼槍刷入即可...";
+            } else if (platform === '官網') {
+                inputLabel.innerText = "請手動輸入官網訂單編號 (4碼數字)：";
+                inputHint.innerText = "💡 提示：必須正好 4 碼數字 (例：1024)";
+                inputElem.placeholder = "請手動輸入 4 位數訂單號...";
+            } else if (platform === '客戶私訂') {
+                inputLabel.innerText = "請輸入訂戶姓名或私訂編號：";
+                inputHint.innerText = "💡 提示：文字不限長度，請勿留白";
+                inputElem.placeholder = "請輸入姓名或備註識別碼...";
+            }
+            inputElem.value = '';
+            inputElem.focus();
+        }
+
         function switchTab(tabId, btnElem) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -520,38 +529,75 @@
         function processScan() {
             initAudio();
             const barcodeInput = document.getElementById('barcodeInput');
-            let barcode = barcodeInput.value.trim().toUpperCase();
-            const type = document.getElementById('shippingType').value;
+            let rawValue = barcodeInput.value.trim();
+            const platform = document.getElementById('platformType').value;
             const picker = document.getElementById('picker').value || '未選擇';
             const packer = document.getElementById('packer').value || '未選擇';
             const note = document.getElementById('note').value.trim();
 
-            if (type === '蝦皮店到店') {
-                const shopeeRegex = /^TW[A-Za-z0-9]{13}$/;
-                if (!shopeeRegex.test(barcode)) {
+            let finalBarcode = rawValue;
+
+            // 各平台防呆與解碼邏輯
+            if (platform === '蝦皮') {
+                finalBarcode = rawValue.toUpperCase();
+                const shopeeRegex = /^[A-Z0-9]{14}$/;
+                if (!shopeeRegex.test(finalBarcode)) {
                     playErrorSound();
-                    setStatusDisplay('error', '❌ 蝦皮條碼格式錯誤！必須為 TW 開頭且共 15 碼英數字！', `輸入碼: ${barcode || '空白'}`);
+                    setStatusDisplay('error', '❌ 蝦皮訂單號格式錯誤！必須正好為 14 碼大寫英數字！', `輸入碼: ${rawValue || '空白'}`);
                     barcodeInput.select();
                     return;
                 }
-            } else {
-                if (!barcode || barcode.length < 5) {
+            } else if (platform === 'iOPEN Mall') {
+                // 自動解析 JSON 格式
+                if (rawValue.includes('Ordinary') || rawValue.includes('code2')) {
+                    try {
+                        const parsedObj = JSON.parse(rawValue);
+                        if (parsedObj.Utility && parsedObj.Utility[0] && parsedObj.Utility[0].Ordinary[0].code2) {
+                            finalBarcode = parsedObj.Utility[0].Ordinary[0].code2; // 提取 G05431136000001
+                        }
+                    } catch (e) {
+                        // 若解析失敗則嘗試以 Regex 搜尋 code2":" 後方的字串
+                        const match = rawValue.match(/"code2":"([^"]+)"/);
+                        if (match && match[1]) {
+                            finalBarcode = match[1];
+                        }
+                    }
+                }
+                
+                if (!finalBarcode || finalBarcode.length < 5) {
                     playErrorSound();
-                    setStatusDisplay('error', '⚠️ 條碼無效或未刷完整！長度過短。', `輸入碼: ${barcode || '空白'}`);
+                    setStatusDisplay('error', '❌ iOPEN Mall 條碼解析失敗或無效！', `原始字串: ${rawValue || '空白'}`);
+                    barcodeInput.select();
+                    return;
+                }
+            } else if (platform === '官網') {
+                const officialRegex = /^\d{4}$/;
+                if (!officialRegex.test(rawValue)) {
+                    playErrorSound();
+                    setStatusDisplay('error', '❌ 官網訂單號格式錯誤！必須正好為 4 碼數字！', `輸入碼: ${rawValue || '空白'}`);
+                    barcodeInput.select();
+                    return;
+                }
+            } else if (platform === '客戶私訂') {
+                if (!rawValue) {
+                    playErrorSound();
+                    setStatusDisplay('error', '❌ 請輸入私訂姓名或編號！', '不可留白');
                     barcodeInput.select();
                     return;
                 }
             }
 
-            const isDuplicate = records.some(r => r.barcode === barcode && r.status !== 'cancelled');
+            // 重複檢測
+            const isDuplicate = records.some(r => r.barcode === finalBarcode && r.status !== 'cancelled');
             if (isDuplicate) {
                 playDuplicateSound();
-                const existItem = records.find(r => r.barcode === barcode && r.status !== 'cancelled');
-                setStatusDisplay('duplicate', `⚠️ 重複刷件警告！該包裹已於 ${existItem.timestamp.split(' ')[1]} 入檔過！`, `單號: ${barcode}`);
+                const existItem = records.find(r => r.barcode === finalBarcode && r.status !== 'cancelled');
+                setStatusDisplay('duplicate', `⚠️ 重複紀錄警告！該訂單已於 ${existItem.timestamp.split(' ')[1]} 記錄過！`, `單號/姓名: ${finalBarcode}`);
                 barcodeInput.select();
                 return;
             }
 
+            // 成功記錄
             playSuccessSound();
             const now = new Date();
             const timestamp = formatDateTime(now);
@@ -561,8 +607,8 @@
                 id: Date.now(),
                 timestamp: timestamp,
                 date: dateStr,
-                type: type,
-                barcode: barcode,
+                type: platform, // 儲存平台名稱
+                barcode: finalBarcode,
                 picker: picker,
                 packer: packer,
                 note: note,
@@ -572,7 +618,7 @@
             records.unshift(newRecord);
             saveRecords();
 
-            setStatusDisplay('success', `✅ 紀錄成功！[${type}] 撿:${picker} / 包:${packer}`, `單號: ${barcode}`);
+            setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
 
             barcodeInput.value = '';
             document.getElementById('note').value = '';
@@ -605,7 +651,7 @@
             const record = records.find(r => r.id === id);
             if (!record) return;
 
-            if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
+            if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號/姓名：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
                 record.status = 'cancelled';
                 saveRecords();
                 updateStats();
@@ -619,9 +665,10 @@
 
         function updateStats() {
             const counts = {
-                '蝦皮店到店': 0, '7-11常溫': 0, '7-11冷凍': 0,
-                '全家常溫': 0, '全家冷凍': 0, '新竹物流': 0,
-                '大榮物流': 0, '黑貓物流': 0
+                '蝦皮': 0, 
+                'iOPEN Mall': 0, 
+                '官網': 0, 
+                '客戶私訂': 0
             };
 
             const todayStr = new Date().toISOString().split('T')[0];
@@ -672,7 +719,7 @@
             const startDate = document.getElementById('queryStartDate').value;
             const endDate = document.getElementById('queryEndDate').value;
             const barcodeKey = document.getElementById('queryBarcode').value.trim().toLowerCase();
-            const typeKey = document.getElementById('queryType').value;
+            const platformKey = document.getElementById('queryPlatform').value;
             const pickerKey = document.getElementById('queryPicker').value;
             const packerKey = document.getElementById('queryPacker').value;
 
@@ -680,7 +727,7 @@
                 if (startDate && r.date < startDate) return false;
                 if (endDate && r.date > endDate) return false;
                 if (barcodeKey && !r.barcode.toLowerCase().includes(barcodeKey)) return false;
-                if (typeKey && r.type !== typeKey) return false;
+                if (platformKey && r.type !== platformKey) return false;
                 if (pickerKey && r.picker !== pickerKey) return false;
                 if (packerKey && r.packer !== packerKey) return false;
                 return true;
@@ -722,7 +769,7 @@
                 return;
             }
 
-            let csvContent = "\uFEFF序號,精確包貨時間,寄件方式,物流單號,撿貨人員,包貨人員,備註,狀態\n";
+            let csvContent = "\uFEFF序號,包貨時間,訂單平台,單號/姓名,撿貨人員,包貨人員,備註,狀態\n";
 
             records.forEach((r, idx) => {
                 const statusStr = r.status === 'cancelled' ? '已取消' : '正常';
