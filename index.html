@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>出貨錄影時間紀錄系統 (Supabase 雲端版)</title>
+    <title>出貨錄影時間紀錄系統</title>
     <!-- 引入 Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -309,7 +309,7 @@
 
                 <div id="statusMessage" class="status-display status-default">
                     <div class="status-icon">🔊</div>
-                    <div class="status-text">系統連線中，請稍候...</div>
+                    <div class="status-text">系統就緒，請刷入或手動填寫訂單單號</div>
                     <div class="status-time" id="statusTimeDisplay">--:--:--</div>
                 </div>
             </div>
@@ -353,7 +353,7 @@
                             </tr>
                         </thead>
                         <tbody id="scanRecentList">
-                            <tr><td colspan="7" class="empty-msg">載入資料中...</td></tr>
+                            <tr><td colspan="7" class="empty-msg">目前尚無出貨紀錄</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -461,10 +461,18 @@
     </div>
 
     <script>
-        // ================= Supabase 初始化 =================
-        const SUPABASE_URL = 'https://wdrloeyagqtbmpedtjiv.supabase.co'; // 替換為你的 Project URL
-        const SUPABASE_ANON_KEY = 'sb_publishable_LwTsiPG3m8N59_G-EF5zsA_QmDZ2-UG'; // 替換為你的 anon public key
-        const supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ================= Supabase 安全初始化 =================
+        const SUPABASE_URL = 'https://wdrloeyagqtbmpedtjiv.supabase.co'; // 請替換為你的 Project URL
+        const SUPABASE_ANON_KEY = 'sb_publishable_LwTsiPG3m8N59_G-EF5zsA_QmDZ2-UG'; // 請替換為你的 anon public key
+
+        let supabase = null;
+        try {
+            if (typeof supabaseClient !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_URL.startsWith('https://')) {
+                supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.warn("Supabase 連線失敗，系統自動轉為本地儲存模式：", e);
+        }
 
         let audioCtx = null;
 
@@ -541,7 +549,7 @@
             });
         }
 
-        let records = [];
+        let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
         let currentPage = 1;
         let pageSize = 20;
 
@@ -566,12 +574,32 @@
             document.getElementById('queryStartDate').value = todayStr;
             document.getElementById('queryEndDate').value = todayStr;
 
+            updateStats();
+            renderScanRecentList();
             handlePlatformChange();
+
             setInterval(updateClock, 1000);
             updateClock();
 
-            // 從 Supabase 載入最新數據
-            await fetchRecordsFromSupabase();
+            // 若 Supabase 初始化成功，嘗試從雲端拉取資料
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('shipping_records')
+                        .select('*')
+                        .order('id', { ascending: false });
+
+                    if (!error && data && data.length > 0) {
+                        records = data;
+                        saveRecordsLocal();
+                        updateStats();
+                        renderScanRecentList();
+                        setStatusDisplay('default', '系統就緒（雲端與本地同步中）');
+                    }
+                } catch (e) {
+                    console.warn("無法存取雲端資料庫，使用本地資料：", e);
+                }
+            }
 
             document.getElementById('barcodeInput').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
@@ -589,31 +617,16 @@
             });
         });
 
-        async function fetchRecordsFromSupabase() {
-            try {
-                const { data, error } = await supabase
-                    .from('shipping_records')
-                    .select('*')
-                    .order('id', { ascending: false });
-
-                if (error) throw error;
-
-                records = data || [];
-                updateStats();
-                renderScanRecentList();
-                setStatusDisplay('default', '系統就緒，資料庫連線正常！請刷入單號');
-            } catch (err) {
-                console.error('Supabase 載入錯誤:', err);
-                setStatusDisplay('error', '⚠️ 雲端資料庫載入失敗！請檢查專案設定');
-            }
-        }
-
         function updateClock() {
             const now = new Date();
             const timeStr = String(now.getHours()).padStart(2, '0') + ':' + 
                             String(now.getMinutes()).padStart(2, '0') + ':' + 
                             String(now.getSeconds()).padStart(2, '0');
             document.getElementById('statusTimeDisplay').innerText = timeStr;
+        }
+
+        function saveRecordsLocal() {
+            localStorage.setItem('shipping_records', JSON.stringify(records));
         }
 
         function handlePlatformChange() {
@@ -700,7 +713,7 @@
             }
         }
 
-        async function processScan() {
+        function processScan() {
             initAudio();
             const barcodeInput = document.getElementById('barcodeInput');
             let rawValue = barcodeInput.value.trim();
@@ -728,12 +741,9 @@
                         }
                     } catch (e) {
                         const match = rawValue.match(/"code2":"([^"]+)"/);
-                        if (match && match[1]) {
-                            finalBarcode = match[1];
-                        }
+                        if (match && match[1]) finalBarcode = match[1];
                     }
                 }
-                
                 if (!finalBarcode || finalBarcode.length < 5) {
                     playErrorSound();
                     setStatusDisplay('error', '❌ iOPEN Mall 常溫條碼解析失敗或無效！', `原始字串: ${rawValue || '空白'}`);
@@ -791,27 +801,26 @@
                 status: 'active'
             };
 
-            // 上傳至 Supabase
-            try {
-                const { error } = await supabase.from('shipping_records').insert([newRecord]);
-                if (error) throw error;
+            // 1. 先寫入本地 (保證現場秒刷秒存)
+            playSuccessSound();
+            records.unshift(newRecord);
+            saveRecordsLocal();
 
-                playSuccessSound();
-                records.unshift(newRecord);
+            setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
 
-                setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
+            barcodeInput.value = '';
+            toggleNumpad(false);
+            if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
 
-                barcodeInput.value = '';
-                toggleNumpad(false);
-                if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
+            currentPage = 1;
+            updateStats();
+            renderScanRecentList();
 
-                currentPage = 1;
-                updateStats();
-                renderScanRecentList();
-            } catch (err) {
-                console.error('寫入 Supabase 失敗:', err);
-                playErrorSound();
-                setStatusDisplay('error', '❌ 寫入資料庫失敗，請確認網路與權限設定！');
+            // 2. 背景同步至 Supabase (不干擾現場)
+            if (supabase) {
+                supabase.from('shipping_records').insert([newRecord]).then(({ error }) => {
+                    if (error) console.warn("雲端靜默同步失敗：", error);
+                });
             }
         }
 
@@ -834,29 +843,22 @@
             statusBox.querySelector('.status-text').innerHTML = `${msg} <br><span class="status-detail-text">${detail}</span>`;
         }
 
-        async function cancelRecord(id) {
+        function cancelRecord(id) {
             const record = records.find(r => r.id === id);
             if (!record) return;
 
             if (confirm(`確定要取消該筆出貨紀錄嗎？\n單號/姓名：${record.barcode}\n取消後將自動標示為廢單並扣除當日統計。`)) {
-                try {
-                    const { error } = await supabase
-                        .from('shipping_records')
-                        .update({ status: 'cancelled' })
-                        .eq('id', id);
+                record.status = 'cancelled';
+                saveRecordsLocal();
+                updateStats();
+                renderScanRecentList();
+                
+                if (document.getElementById('query-tab').classList.contains('active')) {
+                    filterRecords();
+                }
 
-                    if (error) throw error;
-
-                    record.status = 'cancelled';
-                    updateStats();
-                    renderScanRecentList();
-                    
-                    if (document.getElementById('query-tab').classList.contains('active')) {
-                        filterRecords();
-                    }
-                } catch (err) {
-                    console.error('更新 Supabase 狀態失敗:', err);
-                    alert('取消出貨狀態更新失敗，請檢查網路連線！');
+                if (supabase) {
+                    supabase.from('shipping_records').update({ status: 'cancelled' }).eq('id', id).then();
                 }
             }
         }
