@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>出貨錄影時間紀錄系統</title>
-    <!-- 引入 Supabase JS SDK (加載失敗亦不影響頁面運作) -->
+    <!-- 引入 Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
     <style>
         :root {
@@ -461,11 +461,11 @@
     </div>
 
     <script>
-        // ================= Supabase 設定 =================
+        // ================= Supabase 唯一全域憑證宣告 =================
         const SUPABASE_URL = 'https://wdrloeyagqtbmpedtjiv.supabase.co'; // 請替換為你的 Project URL
         const SUPABASE_ANON_KEY = 'sb_publishable_LwTsiPG3m8N59_G-EF5zsA_QmDZ2-UG'; // 請替換為你的 anon public key
 
-        let supabase = null;
+        var supabaseClientInstance = null;
 
         // 音效系統
         let audioCtx = null;
@@ -596,14 +596,14 @@
             });
         });
 
-        // 異步嘗試初始化 Supabase，絕對不卡住主執行緒
+        // 異步初始化 Supabase，避免主執行緒卡死
         function initSupabaseAsync() {
             setTimeout(async () => {
                 try {
                     if (window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_URL.startsWith('https://')) {
-                        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                         
-                        const { data, error } = await supabase
+                        const { data, error } = await supabaseClientInstance
                             .from('shipping_records')
                             .select('*')
                             .order('id', { ascending: false });
@@ -617,7 +617,7 @@
                         }
                     }
                 } catch (e) {
-                    console.warn("Supabase 背景初始化跳過，運作於本地模式");
+                    console.warn("Supabase 初始化跳過，運作於本地模式：", e);
                 }
             }, 100);
         }
@@ -634,7 +634,7 @@
             localStorage.setItem('shipping_records', JSON.stringify(records));
         }
 
-        // 分頁切換 (絕對獨立不依賴 Supabase)
+        // 分頁切換
         function switchTab(tabId, btnElem) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -650,7 +650,7 @@
             }
         }
 
-        // 平台切換 (絕對獨立不依賴 Supabase)
+        // 平台選單切換
         function handlePlatformChange() {
             const platform = document.getElementById('platformType').value;
             const inputLabel = document.getElementById('inputLabel');
@@ -721,7 +721,7 @@
             processScan();
         }
 
-        // 核心掃描處理 (先寫本地，背景同步雲端)
+        // 核心掃描處理
         function processScan() {
             initAudio();
             const barcodeInput = document.getElementById('barcodeInput');
@@ -810,7 +810,7 @@
                 status: 'active'
             };
 
-            // 1. 本地即時寫入 (100% 不卡頓)
+            // 1. 本地儲存 (確保即時寫入)
             playSuccessSound();
             records.unshift(newRecord);
             saveRecordsLocal();
@@ -825,10 +825,10 @@
             updateStats();
             renderScanRecentList();
 
-            // 2. 背景非同步上傳 Supabase
-            if (supabase) {
+            // 2. 背景非同步同步至 Supabase
+            if (supabaseClientInstance) {
                 setTimeout(() => {
-                    supabase.from('shipping_records').insert([newRecord]).then(({ error }) => {
+                    supabaseClientInstance.from('shipping_records').insert([newRecord]).then(({ error }) => {
                         if (error) console.warn("Supabase 靜默同步警告：", error);
                     });
                 }, 10);
@@ -868,8 +868,8 @@
                     filterRecords();
                 }
 
-                if (supabase) {
-                    supabase.from('shipping_records').update({ status: 'cancelled' }).eq('id', id).then();
+                if (supabaseClientInstance) {
+                    supabaseClientInstance.from('shipping_records').update({ status: 'cancelled' }).eq('id', id).then();
                 }
             }
         }
