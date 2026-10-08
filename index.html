@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>出貨錄影時間紀錄系統</title>
+    <title>包裹出貨綜合紀錄系統</title>
     <!-- 引入 Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
     <style>
@@ -27,77 +27,98 @@
             --tag-coupang: #e61924;
         }
 
-        * { box-sizing: border-box; font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
-        body { background-color: var(--bg-color); color: #0f172a; line-height: 1.5; padding-bottom: 60px; font-size: 16px; }
+        * { box-sizing: border-box; font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); color: #0f172a; line-height: 1.5; padding-bottom: 60px; font-size: 16px; transition: background-color 0.2s ease; }
 
+        /* 頂部雙大系統導覽列 */
+        .main-system-nav {
+            display: flex;
+            justify-content: center;
+            background: #0f172a;
+            padding: 8px 16px;
+            gap: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .main-sys-btn {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 2px solid #334155;
+            padding: 12px 28px;
+            font-size: 19px;
+            font-weight: 800;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .main-sys-btn:hover { color: #ffffff; background: #334155; }
+        .main-sys-btn.active {
+            background: var(--accent-color);
+            color: #ffffff;
+            border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+        }
+
+        .system-section { display: none; }
+        .system-section.active { display: block; }
+
+        /* ========== 組別一：錄影時間系統樣式 ========== */
         header { 
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
-            color: white; 
-            text-align: center; 
-            padding: 20px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+            color: white; text-align: center; padding: 18px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
         }
-        header h1 { font-size: 26px; font-weight: 800; letter-spacing: 1px; }
+        header h1 { font-size: 24px; font-weight: 800; letter-spacing: 1px; }
 
         .tab-nav { display: flex; justify-content: center; background-color: var(--secondary-color); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
         .tab-btn { 
-            background: none; border: none; color: #94a3b8; padding: 16px 36px; font-size: 18px; font-weight: bold; 
+            background: none; border: none; color: #94a3b8; padding: 14px 32px; font-size: 17px; font-weight: bold; 
             cursor: pointer; transition: all 0.25s ease; outline: none; display: flex; align-items: center; gap: 8px; 
             border-bottom: 4px solid transparent;
         }
         .tab-btn:hover { color: #f8fafc; background-color: rgba(255,255,255,0.05); }
         .tab-btn.active { color: #ffffff; background-color: rgba(255,255,255,0.12); border-bottom-color: #38bdf8; }
 
-        .container { max-width: 1350px; margin: 24px auto; padding: 0 16px; }
+        .container { max-width: 1350px; margin: 20px auto; padding: 0 16px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         .card { 
             background-color: var(--card-bg); border-radius: 12px; 
             box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.06); 
-            border: 1px solid var(--border-color); padding: 26px; margin-bottom: 24px; 
+            border: 1px solid var(--border-color); padding: 22px; margin-bottom: 20px; 
             position: relative;
         }
         .card-title { 
-            font-size: 20px; font-weight: 800; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; 
-            padding-bottom: 12px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; 
+            font-size: 19px; font-weight: 800; margin-bottom: 18px; border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 10px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; 
         }
 
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-        
-        .query-form-grid { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 20px; 
-        }
-        
-        @media (max-width: 900px) {
-            .query-form-grid { grid-template-columns: 1fr; }
-        }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+        .query-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        @media (max-width: 900px) { .query-form-grid { grid-template-columns: 1fr; } }
 
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-weight: 800; font-size: 16px; color: #334155; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-weight: 800; font-size: 15px; color: #334155; }
         
         .form-control { 
-            width: 100%; padding: 14px 16px; border: 2px solid var(--border-color); border-radius: 8px; 
-            font-size: 17px; font-weight: 600; transition: all 0.2s; background-color: #f8fafc; color: #0f172a;
+            width: 100%; padding: 12px 14px; border: 2px solid var(--border-color); border-radius: 8px; 
+            font-size: 16px; font-weight: 600; transition: all 0.2s; background-color: #f8fafc; color: #0f172a;
         }
-        .form-control:focus { 
-            border-color: var(--accent-color); background-color: #fff; outline: none; 
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2); 
-        }
+        .form-control:focus { border-color: var(--accent-color); background-color: #fff; outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2); }
         
-        .barcode-input-wrapper { display: flex; gap: 12px; margin-top: 6px; position: relative; }
+        .barcode-input-wrapper { display: flex; gap: 12px; margin-top: 4px; position: relative; }
         .barcode-input-wrapper input { 
-            font-size: 24px; font-weight: 800; letter-spacing: 1px; color: #0f172a; background-color: #ffffff;
-            border: 3px solid #94a3b8; height: 60px;
+            font-size: 22px; font-weight: 800; letter-spacing: 1px; color: #0f172a; background-color: #ffffff;
+            border: 3px solid #94a3b8; height: 56px;
         }
         .barcode-input-wrapper input:focus { border-color: var(--accent-color); background-color: #f0f7ff; }
 
         .date-range-group { display: flex; align-items: center; gap: 8px; }
 
         .btn { 
-            padding: 14px 28px; border: none; border-radius: 8px; font-weight: 800; font-size: 17px; 
+            padding: 12px 24px; border: none; border-radius: 8px; font-weight: 800; font-size: 16px; 
             cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }
@@ -109,21 +130,21 @@
         .btn-secondary { background-color: #64748b; color: white; }
         .btn-secondary:hover { background-color: #475569; }
         .btn-secondary:disabled { background-color: #cbd5e1; cursor: not-allowed; }
-        
-        .btn-cancel { 
-            background-color: #fef2f2; border: 1.5px solid #fca5a5; color: #ef4444; 
-            padding: 8px 14px; font-size: 14px; border-radius: 6px; font-weight: 800;
-        }
+        .btn-danger { background-color: #dc3545; color: white; padding: 6px 12px; font-size: 13px; border-radius: 6px; font-weight: bold; }
+        .btn-danger:hover { background-color: #bd2130; }
+        .btn-outline { background: white; border: 1px solid #6c757d; color: #495057; }
+        .btn-outline:hover { background: #e9ecef; }
+        .btn-cancel { background-color: #fef2f2; border: 1.5px solid #fca5a5; color: #ef4444; padding: 6px 12px; font-size: 13px; border-radius: 6px; font-weight: 800; }
         .btn-cancel:hover { background-color: #dc2626; color: white; }
 
-        /* 大字體看板 */
+        /* 看板與狀態 */
         .status-display {
-            margin-top: 22px; padding: 22px 26px; border-radius: 12px; font-size: 22px; font-weight: 800;
-            display: flex; align-items: center; justify-content: space-between; gap: 18px; transition: all 0.3s ease;
+            margin-top: 18px; padding: 18px 22px; border-radius: 12px; font-size: 20px; font-weight: 800;
+            display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: all 0.3s ease;
         }
-        .status-display .status-icon { font-size: 42px; display: flex; align-items: center; justify-content: center; }
+        .status-display .status-icon { font-size: 36px; display: flex; align-items: center; justify-content: center; }
         .status-display .status-text { flex-grow: 1; }
-        .status-display .status-time { font-size: 20px; font-weight: 800; padding: 8px 16px; border-radius: 8px; background: rgba(255,255,255,0.75); }
+        .status-display .status-time { font-size: 18px; font-weight: 800; padding: 6px 14px; border-radius: 8px; background: rgba(255,255,255,0.75); }
 
         .status-default { background-color: #f1f5f9; color: #475569; border-left: 10px solid #94a3b8; }
         .status-success { background-color: #dcfce7; color: #14532d; border-left: 10px solid var(--success-color); }
@@ -131,66 +152,35 @@
         .status-error { background-color: #fee2e2; color: #7f1d1d; border-left: 10px solid var(--danger-color); }
 
         .status-detail-text {
-            font-size: 26px !important;
-            font-weight: 900 !important;
-            color: #000000 !important;
-            margin-top: 6px;
-            display: inline-block;
-            letter-spacing: 1px;
-            background-color: rgba(255, 255, 255, 0.6);
-            padding: 2px 10px;
-            border-radius: 6px;
+            font-size: 22px !important; font-weight: 900 !important; color: #000000 !important; margin-top: 4px;
+            display: inline-block; letter-spacing: 1px; background-color: rgba(255, 255, 255, 0.6); padding: 2px 8px; border-radius: 6px;
         }
 
         /* 專屬懸浮數字鍵盤 */
         .numpad-container {
-            display: none;
-            position: absolute;
-            top: 70px;
-            left: 0;
-            z-index: 999;
-            background: #ffffff;
-            border: 3px solid var(--accent-color);
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-            width: 320px;
+            display: none; position: absolute; top: 65px; left: 0; z-index: 999; background: #ffffff;
+            border: 3px solid var(--accent-color); border-radius: 14px; padding: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); width: 310px;
         }
-        .numpad-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
+        .numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .num-btn {
-            height: 60px;
-            font-size: 24px;
-            font-weight: 800;
-            border: 2px solid #cbd5e1;
-            background-color: #f8fafc;
-            color: #0f172a;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            height: 56px; font-size: 22px; font-weight: 800; border: 2px solid #cbd5e1; background-color: #f8fafc; color: #0f172a;
+            border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
         }
-        .num-btn:active {
-            background-color: var(--accent-color);
-            color: white;
-            transform: scale(0.95);
-        }
+        .num-btn:active { background-color: var(--accent-color); color: white; transform: scale(0.95); }
         .num-btn-clear { background-color: #fee2e2; color: #dc2626; border-color: #fca5a5; }
         .num-btn-del { background-color: #fef3c7; color: #d97706; border-color: #fcd34d; }
-        .num-btn-submit { grid-column: span 3; background-color: var(--success-color); color: white; height: 50px; font-size: 20px; margin-top: 4px; }
+        .num-btn-submit { grid-column: span 3; background-color: var(--success-color); color: white; height: 46px; font-size: 18px; margin-top: 4px; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-top: 10px; }
         .stat-card { 
-            border: 2px solid var(--border-color); border-radius: 10px; padding: 16px 12px; text-align: center; 
+            border: 2px solid var(--border-color); border-radius: 10px; padding: 14px 10px; text-align: center; 
             background-color: #ffffff; transition: transform 0.2s, box-shadow 0.2s;
         }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-        .stat-card .title { font-size: 15px; color: #64748b; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .stat-card .count { font-size: 32px; font-weight: 900; color: #0f172a; }
+        .stat-card .title { font-size: 14px; color: #64748b; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .stat-card .count { font-size: 28px; font-weight: 900; color: #0f172a; }
 
-        .tag-badge { padding: 6px 14px; border-radius: 20px; color: white; font-size: 14px; font-weight: 800; display: inline-block; }
+        .tag-badge { padding: 4px 12px; border-radius: 20px; color: white; font-size: 13px; font-weight: 800; display: inline-block; }
         .tag-shopee { background-color: var(--tag-shopee); }
         .tag-iopen-room { background-color: var(--tag-iopen-room); }
         .tag-iopen-ice { background-color: var(--tag-iopen-ice); }
@@ -198,314 +188,431 @@
         .tag-private { background-color: var(--tag-private); }
         .tag-coupang { background-color: var(--tag-coupang); }
 
-        .table-responsive { overflow-x: auto; margin-top: 12px; border-radius: 10px; border: 1.5px solid var(--border-color); }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 16px; background-color: #fff; }
-        .data-table th { background-color: #f8fafc; color: #334155; font-weight: 800; padding: 14px; text-align: center; white-space: nowrap; border-bottom: 2px solid var(--border-color); font-size: 16px; }
-        .data-table td { border-bottom: 1px solid var(--border-color); padding: 14px; text-align: center; color: #1e293b; font-weight: 600; }
+        .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1.5px solid var(--border-color); }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 15px; background-color: #fff; }
+        .data-table th { background-color: #f8fafc; color: #334155; font-weight: 800; padding: 12px; text-align: center; white-space: nowrap; border-bottom: 2px solid var(--border-color); }
+        .data-table td { border-bottom: 1px solid var(--border-color); padding: 12px; text-align: center; color: #1e293b; font-weight: 600; }
         .data-table tbody tr:hover { background-color: #f1f5f9; }
 
-        .time-badge { color: #b91c1c; font-weight: 800; background-color: #fef2f2; padding: 6px 12px; border-radius: 6px; font-family: monospace; font-size: 15px; }
-        .badge-cancelled { background-color: #94a3b8; color: white; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 800; }
+        .time-badge { color: #b91c1c; font-weight: 800; background-color: #fef2f2; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 14px; }
+        .badge-cancelled { background-color: #94a3b8; color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; }
         .row-cancelled { background-color: #fef2f2 !important; text-decoration: line-through; color: #94a3b8; }
         .row-cancelled td { color: #94a3b8; }
         .row-cancelled .time-badge { text-decoration: line-through; opacity: 0.5; }
 
-        .empty-msg { text-align: center; color: #94a3b8; padding: 40px; font-size: 17px; font-weight: 600; }
-        .hint-text { font-size: 14px; color: #64748b; margin-top: 6px; font-weight: 600; }
+        .empty-msg { text-align: center; color: #94a3b8; padding: 30px; font-size: 16px; font-weight: 600; }
+        .hint-text { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
 
-        .pagination-bar {
-            display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0;
-        }
-        .pagination-controls { display: flex; align-items: center; gap: 12px; }
+        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+        .pagination-controls { display: flex; align-items: center; gap: 10px; }
+
+        /* ========== 組別二：IOP 冷凍專用系統樣式 ========== */
+        .iop-container { max-width: 950px; margin: 20px auto; padding: 0 20px; }
+        .iop-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .iop-card { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #007bff; }
+        .iop-card .title { font-size: 13px; color: #6c757d; font-weight: bold; }
+        .iop-card .value { font-size: 24px; color: #212529; font-weight: bold; margin-top: 5px; }
+
+        .iop-input-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .iop-input-section { display: flex; gap: 10px; }
+        .iop-input-section input[type="text"] { flex: 1; padding: 12px; font-size: 18px; border: 2px solid #ced4da; border-radius: 6px; outline: none; }
+        .iop-input-section input[type="text"]:focus { border-color: #007bff; }
+
+        .iop-status-box { padding: 15px; font-size: 18px; font-weight: bold; border-radius: 6px; margin-top: 15px; text-align: center; display: none; }
+        .iop-status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .iop-status-duplicate { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .iop-status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .iop-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .iop-filter-group { display: flex; gap: 10px; align-items: center; }
+        .iop-search-box, .iop-date-box { padding: 8px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        .iop-search-box { width: 220px; }
+
+        .iop-table-container { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
+        .iop-table-container table { width: 100%; border-collapse: collapse; }
+        .iop-table-container th, .iop-table-container td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        .iop-table-container th { background-color: #f8f9fa; color: #495057; font-weight: 600; }
+        .iop-table-container tr:nth-child(even) { background-color: #fcfcfc; }
+        .iop-table-container tr:hover { background-color: #f1f3f5; }
+
+        .row-highlight { animation: highlightFade 2s ease-out; }
+        @keyframes highlightFade { 0% { background-color: #d4edda; } 100% { background-color: transparent; } }
+
+        .flash-danger { animation: flashRed 0.4s 2 alternate; }
+        @keyframes flashRed { from { background-color: var(--bg-color); } to { background-color: #ffc9c9; } }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>出貨錄影時間紀錄系統</h1>
-    </header>
-
-    <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('scan-tab', this)">
-            📦 包貨掃描作業
+    <!-- 最上層：大系統導覽切換列 -->
+    <div class="main-system-nav">
+        <button class="main-sys-btn active" onclick="switchMainSystem('sys-video', this)">
+            📹 包裹出貨錄影時間紀錄系統
         </button>
-        <button class="tab-btn" onclick="switchTab('query-tab', this)">
-            🔍 包裹歷史查詢
+        <button class="main-sys-btn" onclick="switchMainSystem('sys-iop-ice', this)">
+            ❄️ IOP 冷凍包裹出貨掃描紀錄系統
         </button>
     </div>
 
-    <div class="container">
-        <!-- 分頁一：包貨掃描作業 -->
-        <div id="scan-tab" class="tab-content active">
-            <div class="card">
-                <div class="card-title">1. 出貨平台與人員設定</div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="platformType">訂單來源平台：</label>
-                        <select id="platformType" class="form-control" onchange="handlePlatformChange()">
-                            <option value="蝦皮">蝦皮 (Shopee)</option>
-                            <option value="iOPEN Mall 常溫">iOPEN Mall 常溫</option>
-                            <option value="iOPEN Mall 冷凍">iOPEN Mall 冷凍</option>
-                            <option value="酷澎">酷澎 (Coupang)</option>
-                            <option value="官網">官網 (Official Site)</option>
-                            <option value="客戶私訂">客戶私訂</option>
-                        </select>
-                    </div>
+    <!-- ================================================================= -->
+    <!-- 大組別一：包裹出貨錄影時間紀錄系統                             -->
+    <!-- ================================================================= -->
+    <div id="sys-video" class="system-section active">
+        <header>
+            <h1>📹 包裹出貨錄影時間紀錄系統</h1>
+        </header>
 
-                    <div class="form-group">
-                        <label for="picker">撿貨人員：</label>
-                        <select id="picker" class="form-control">
-                            <option value="">-- 請選擇人員 --</option>
-                            <option value="儀君">儀君</option>
-                            <option value="婉容">婉容</option>
-                            <option value="艷秋">艷秋</option>
-                            <option value="禹萱">禹萱</option>
-                            <option value="佩穎">佩穎</option>
-                            <option value="品如">品如</option>
-                        </select>
-                    </div>
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('scan-tab', this)">📦 包貨掃描作業</button>
+            <button class="tab-btn" onclick="switchTab('query-tab', this)">🔍 包裹歷史查詢</button>
+        </div>
 
-                    <div class="form-group">
-                        <label for="packer">包貨人員：</label>
-                        <select id="packer" class="form-control">
-                            <option value="">-- 請選擇人員 --</option>
-                            <option value="儀君">儀君</option>
-                            <option value="婉容">婉容</option>
-                            <option value="艷秋">艷秋</option>
-                            <option value="禹萱">禹萱</option>
-                            <option value="佩穎">佩穎</option>
-                            <option value="品如">品如</option>
-                        </select>
+        <div class="container">
+            <!-- 分頁一：包貨掃描作業 -->
+            <div id="scan-tab" class="tab-content active">
+                <div class="card">
+                    <div class="card-title">1. 出貨平台與人員設定</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="platformType">訂單來源平台：</label>
+                            <select id="platformType" class="form-control" onchange="handlePlatformChange()">
+                                <option value="蝦皮">蝦皮 (Shopee)</option>
+                                <option value="iOPEN Mall 常溫">iOPEN Mall 常溫</option>
+                                <option value="iOPEN Mall 冷凍">iOPEN Mall 冷凍</option>
+                                <option value="酷澎">酷澎 (Coupang)</option>
+                                <option value="官網">官網 (Official Site)</option>
+                                <option value="客戶私訂">客戶私訂</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="picker">撿貨人員：</label>
+                            <select id="picker" class="form-control">
+                                <option value="">-- 請選擇人員 --</option>
+                                <option value="儀君">儀君</option>
+                                <option value="婉容">婉容</option>
+                                <option value="艷秋">艷秋</option>
+                                <option value="禹萱">禹萱</option>
+                                <option value="佩穎">佩穎</option>
+                                <option value="品如">品如</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="packer">包貨人員：</label>
+                            <select id="packer" class="form-control">
+                                <option value="">-- 請選擇人員 --</option>
+                                <option value="儀君">儀君</option>
+                                <option value="婉容">婉容</option>
+                                <option value="艷秋">艷秋</option>
+                                <option value="禹萱">禹萱</option>
+                                <option value="佩穎">佩穎</option>
+                                <option value="品如">品如</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-title">2. 刷單與輸入區</div>
-                <div class="form-group">
-                    <label for="barcodeInput" id="inputLabel">請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：</label>
-                    <div class="barcode-input-wrapper">
-                        <input type="text" id="barcodeInput" class="form-control" placeholder="請掃描或輸入..." autofocus autocomplete="off" inputmode="none" onclick="toggleNumpad(true)">
-                        <button class="btn btn-success" onclick="processScan()">輸入</button>
+                <div class="card">
+                    <div class="card-title">2. 刷單與輸入區</div>
+                    <div class="form-group">
+                        <label for="barcodeInput" id="inputLabel">請刷入蝦皮撿貨單上的訂單編號 (14碼英數字)：</label>
+                        <div class="barcode-input-wrapper">
+                            <input type="text" id="barcodeInput" class="form-control" placeholder="請掃描或輸入..." autofocus autocomplete="off" inputmode="none" onclick="toggleNumpad(true)">
+                            <button class="btn btn-success" onclick="processScan()">輸入</button>
 
-                        <!-- 懸浮數字鍵盤 -->
-                        <div id="numpad" class="numpad-container">
-                            <div class="numpad-grid">
-                                <button class="num-btn" onclick="pressNum('1')">1</button>
-                                <button class="num-btn" onclick="pressNum('2')">2</button>
-                                <button class="num-btn" onclick="pressNum('3')">3</button>
-                                <button class="num-btn" onclick="pressNum('4')">4</button>
-                                <button class="num-btn" onclick="pressNum('5')">5</button>
-                                <button class="num-btn" onclick="pressNum('6')">6</button>
-                                <button class="num-btn" onclick="pressNum('7')">7</button>
-                                <button class="num-btn" onclick="pressNum('8')">8</button>
-                                <button class="num-btn" onclick="pressNum('9')">9</button>
-                                <button class="num-btn num-btn-clear" onclick="pressNum('C')">清空</button>
-                                <button class="num-btn" onclick="pressNum('0')">0</button>
-                                <button class="num-btn num-btn-del" onclick="pressNum('DEL')">⌫</button>
-                                <button class="num-btn num-btn-submit" onclick="submitNumpad()">輸入 / 記錄</button>
+                            <!-- 懸浮數字鍵盤 -->
+                            <div id="numpad" class="numpad-container">
+                                <div class="numpad-grid">
+                                    <button class="num-btn" onclick="pressNum('1')">1</button>
+                                    <button class="num-btn" onclick="pressNum('2')">2</button>
+                                    <button class="num-btn" onclick="pressNum('3')">3</button>
+                                    <button class="num-btn" onclick="pressNum('4')">4</button>
+                                    <button class="num-btn" onclick="pressNum('5')">5</button>
+                                    <button class="num-btn" onclick="pressNum('6')">6</button>
+                                    <button class="num-btn" onclick="pressNum('7')">7</button>
+                                    <button class="num-btn" onclick="pressNum('8')">8</button>
+                                    <button class="num-btn" onclick="pressNum('9')">9</button>
+                                    <button class="num-btn num-btn-clear" onclick="pressNum('C')">清空</button>
+                                    <button class="num-btn" onclick="pressNum('0')">0</button>
+                                    <button class="num-btn num-btn-del" onclick="pressNum('DEL')">⌫</button>
+                                    <button class="num-btn num-btn-submit" onclick="submitNumpad()">輸入 / 記錄</button>
+                                </div>
                             </div>
                         </div>
+                        <div class="hint-text" id="inputHint">💡 提示：蝦皮需為 14 碼大寫英數字組合</div>
                     </div>
-                    <div class="hint-text" id="inputHint">💡 提示：蝦皮需為 14 碼大寫英數字組合</div>
+
+                    <div id="statusMessage" class="status-display status-default">
+                        <div class="status-icon">🔊</div>
+                        <div class="status-text">系統就緒，請刷入或手動填寫訂單單號</div>
+                        <div class="status-time" id="statusTimeDisplay">--:--:--</div>
+                    </div>
                 </div>
 
-                <div id="statusMessage" class="status-display status-default">
-                    <div class="status-icon">🔊</div>
-                    <div class="status-text">系統就緒，請刷入或手動填寫訂單單號</div>
-                    <div class="status-time" id="statusTimeDisplay">--:--:--</div>
+                <div class="card">
+                    <div class="card-title">今日各平台已包件數</div>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="title"><span class="tag-badge tag-shopee">蝦皮</span></div><div class="count" id="cnt-shopee">0</div></div>
+                        <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen-room">iOPEN 常溫</span></div><div class="count" id="cnt-iopen-room">0</div></div>
+                        <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen-ice">iOPEN 冷凍</span></div><div class="count" id="cnt-iopen-ice">0</div></div>
+                        <div class="stat-card"><div class="title"><span class="tag-badge tag-coupang">酷澎</span></div><div class="count" id="cnt-coupang">0</div></div>
+                        <div class="stat-card"><div class="title"><span class="tag-badge tag-official">官網</span></div><div class="count" id="cnt-official">0</div></div>
+                        <div class="stat-card"><div class="title"><span class="tag-badge tag-private">客戶私訂</span></div><div class="count" id="cnt-private">0</div></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>現場歷史紀錄清單</span>
+                        <div style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+                            <label for="pageSizeSelect">每頁顯示：</label>
+                            <select id="pageSizeSelect" class="form-control" style="padding: 6px 12px; width: auto;" onchange="changePageSize()">
+                                <option value="10">10 筆</option>
+                                <option value="20" selected>20 筆</option>
+                                <option value="50">50 筆</option>
+                                <option value="100">100 筆</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>序號</th>
+                                    <th>包貨時間</th>
+                                    <th>平台</th>
+                                    <th>訂單編號 / 寄件條碼</th>
+                                    <th>撿貨</th>
+                                    <th>包貨</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scanRecentList">
+                                <tr><td colspan="7" class="empty-msg">目前尚無出貨紀錄</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <span id="pageInfo" style="font-weight: 700; color: #64748b;">第 1 / 1 頁，共 0 筆</span>
+                        <div class="pagination-controls">
+                            <button id="btnPrevPage" class="btn btn-secondary" onclick="prevPage()" disabled>⬅️ 上一頁</button>
+                            <button id="btnNextPage" class="btn btn-secondary" onclick="nextPage()" disabled>下一頁 ➡️</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-title">今日各平台已包件數</div>
-                <div class="stats-grid">
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-shopee">蝦皮</span></div><div class="count" id="cnt-shopee">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen-room">iOPEN 常溫</span></div><div class="count" id="cnt-iopen-room">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen-ice">iOPEN 冷凍</span></div><div class="count" id="cnt-iopen-ice">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-coupang">酷澎</span></div><div class="count" id="cnt-coupang">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-official">官網</span></div><div class="count" id="cnt-official">0</div></div>
-                    <div class="stat-card"><div class="title"><span class="tag-badge tag-private">客戶私訂</span></div><div class="count" id="cnt-private">0</div></div>
-                </div>
-            </div>
+            <!-- 分頁二：包裹歷史查詢 -->
+            <div id="query-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-title">歷史包裹時間查詢</div>
+                    
+                    <div class="query-form-grid">
+                        <div class="form-group">
+                            <label>出貨日期區間：</label>
+                            <div class="date-range-group">
+                                <input type="date" id="queryStartDate" class="form-control">
+                                <span>至</span>
+                                <input type="date" id="queryEndDate" class="form-control">
+                            </div>
+                        </div>
 
-            <div class="card">
-                <div class="card-title">
-                    <span>現場歷史紀錄清單</span>
-                    <div style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
-                        <label for="pageSizeSelect">每頁顯示：</label>
-                        <select id="pageSizeSelect" class="form-control" style="padding: 6px 12px; width: auto;" onchange="changePageSize()">
-                            <option value="10">10 筆</option>
-                            <option value="20" selected>20 筆</option>
-                            <option value="50">50 筆</option>
-                            <option value="100">100 筆</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>序號</th>
-                                <th>包貨時間</th>
-                                <th>平台</th>
-                                <th>訂單編號 / 寄件條碼</th>
-                                <th>撿貨</th>
-                                <th>包貨</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scanRecentList">
-                            <tr><td colspan="7" class="empty-msg">目前尚無出貨紀錄</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                        <div class="form-group">
+                            <label for="queryBarcode">搜尋單號 / 客人姓名：</label>
+                            <input type="text" id="queryBarcode" class="form-control" placeholder="輸入單號關鍵字...">
+                        </div>
 
-                <div class="pagination-bar">
-                    <span id="pageInfo" style="font-weight: 700; color: #64748b;">第 1 / 1 頁，共 0 筆</span>
-                    <div class="pagination-controls">
-                        <button id="btnPrevPage" class="btn btn-secondary" onclick="prevPage()" disabled>⬅️ 上一頁</button>
-                        <button id="btnNextPage" class="btn btn-secondary" onclick="nextPage()" disabled>下一頁 ➡️</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+                        <div class="form-group">
+                            <label for="queryPlatform">訂單平台：</label>
+                            <select id="queryPlatform" class="form-control">
+                                <option value="">全部平台</option>
+                                <option value="蝦皮">蝦皮</option>
+                                <option value="iOPEN Mall 常溫">iOPEN Mall 常溫</option>
+                                <option value="iOPEN Mall 冷凍">iOPEN Mall 冷凍</option>
+                                <option value="酷澎">酷澎</option>
+                                <option value="官網">官網</option>
+                                <option value="客戶私訂">客戶私訂</option>
+                            </select>
+                        </div>
 
-        <!-- 分頁二：包裹歷史查詢 -->
-        <div id="query-tab" class="tab-content">
-            <div class="card">
-                <div class="card-title">歷史包裹時間查詢</div>
-                
-                <div class="query-form-grid">
-                    <div class="form-group">
-                        <label>出貨日期區間：</label>
-                        <div class="date-range-group">
-                            <input type="date" id="queryStartDate" class="form-control">
-                            <span>至</span>
-                            <input type="date" id="queryEndDate" class="form-control">
+                        <div class="form-group">
+                            <label for="queryPicker">撿貨人員：</label>
+                            <select id="queryPicker" class="form-control">
+                                <option value="">全部人員</option>
+                                <option value="儀君">儀君</option>
+                                <option value="婉容">婉容</option>
+                                <option value="艷秋">艷秋</option>
+                                <option value="禹萱">禹萱</option>
+                                <option value="佩穎">佩穎</option>
+                                <option value="品如">品如</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="queryPacker">包貨人員：</label>
+                            <select id="queryPacker" class="form-control">
+                                <option value="">全部人員</option>
+                                <option value="儀君">儀君</option>
+                                <option value="婉容">婉容</option>
+                                <option value="艷秋">艷秋</option>
+                                <option value="禹萱">禹萱</option>
+                                <option value="佩穎">佩穎</option>
+                                <option value="品如">品如</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="queryBarcode">搜尋單號 / 客人姓名：</label>
-                        <input type="text" id="queryBarcode" class="form-control" placeholder="輸入單號關鍵字...">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="queryPlatform">訂單平台：</label>
-                        <select id="queryPlatform" class="form-control">
-                            <option value="">全部平台</option>
-                            <option value="蝦皮">蝦皮</option>
-                            <option value="iOPEN Mall 常溫">iOPEN Mall 常溫</option>
-                            <option value="iOPEN Mall 冷凍">iOPEN Mall 冷凍</option>
-                            <option value="酷澎">酷澎</option>
-                            <option value="官網">官網</option>
-                            <option value="客戶私訂">客戶私訂</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="queryPicker">撿貨人員：</label>
-                        <select id="queryPicker" class="form-control">
-                            <option value="">全部人員</option>
-                            <option value="儀君">儀君</option>
-                            <option value="婉容">婉容</option>
-                            <option value="艷秋">艷秋</option>
-                            <option value="禹萱">禹萱</option>
-                            <option value="佩穎">佩穎</option>
-                            <option value="品如">品如</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="queryPacker">包貨人員：</label>
-                        <select id="queryPacker" class="form-control">
-                            <option value="">全部人員</option>
-                            <option value="儀君">儀君</option>
-                            <option value="婉容">婉容</option>
-                            <option value="艷秋">艷秋</option>
-                            <option value="禹萱">禹萱</option>
-                            <option value="佩穎">佩穎</option>
-                            <option value="品如">品如</option>
-                        </select>
+                    <div style="display: flex; gap: 14px; margin-top: 22px;">
+                        <button class="btn btn-primary" onclick="filterRecords()">🔍 開始查詢</button>
+                        <button class="btn btn-success" onclick="exportCSV()">📥 匯出報表 (CSV)</button>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 14px; margin-top: 22px;">
-                    <button class="btn btn-primary" onclick="filterRecords()">🔍 開始查詢</button>
-                    <button class="btn btn-success" onclick="exportCSV()">📥 匯出報表 (CSV)</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">
-                    <span>查詢結果</span>
-                    <span id="queryCountBadge" style="font-size: 16px; font-weight: normal; color: #64748b;">共 0 筆紀錄</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>序號</th>
-                                <th>包貨時間</th>
-                                <th>平台</th>
-                                <th>訂單編號 / 寄件條碼</th>
-                                <th>撿貨</th>
-                                <th>包貨</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queryList">
-                            <tr><td colspan="7" class="empty-msg">請設定條件後點擊開始查詢</td></tr>
-                        </tbody>
-                    </table>
+                <div class="card">
+                    <div class="card-title">
+                        <span>查詢結果</span>
+                        <span id="queryCountBadge" style="font-size: 16px; font-weight: normal; color: #64748b;">共 0 筆紀錄</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>序號</th>
+                                    <th>包貨時間</th>
+                                    <th>平台</th>
+                                    <th>訂單編號 / 寄件條碼</th>
+                                    <th>撿貨</th>
+                                    <th>包貨</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queryList">
+                                <tr><td colspan="7" class="empty-msg">請設定條件後點擊開始查詢</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ================================================================= -->
+    <!-- 大組別二：IOP 冷凍包裹出貨掃描紀錄系統                             -->
+    <!-- ================================================================= -->
+    <div id="sys-iop-ice" class="system-section">
+        <div class="iop-container">
+            <h2 style="margin-bottom: 20px; color: #1e293b; border-bottom: 3px solid #007bff; padding-bottom: 10px;">
+                📦 IOP 冷凍包裹出貨掃瞄紀錄系統
+            </h2>
+
+            <div class="iop-dashboard">
+                <div class="iop-card">
+                    <div class="title">今日已出貨數量</div>
+                    <div class="value" id="iopTodayCount">0 件</div>
+                </div>
+                <div class="iop-card" style="border-left-color: #28a745;">
+                    <div class="title">最新掃瞄單號</div>
+                    <div class="value" id="iopLastBarcode" style="font-size: 16px; word-break: break-all;">無</div>
+                </div>
+            </div>
+
+            <div class="iop-input-card">
+                <div class="iop-input-section">
+                    <input type="text" id="iopBarcodeInput" placeholder="請將條碼槍對準單號刷入 (限 20 码)..." autofocus autocomplete="off">
+                </div>
+                <div id="iopStatusMessage" class="iop-status-box"></div>
+            </div>
+
+            <div class="iop-toolbar">
+                <div class="iop-filter-group">
+                    <input type="text" id="iopSearchInput" class="iop-search-box" placeholder="🔍 搜尋單號..." oninput="iopHandleSearchAndFilter()">
+                    <input type="date" id="iopDateInput" class="iop-date-box" onchange="iopHandleSearchAndFilter()">
+                    <button class="btn btn-outline" onclick="iopResetFilter()">重設篩選</button>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="iopExportCSV()">📥 匯出歷史 Excel (CSV)</button>
+                </div>
+            </div>
+
+            <div class="iop-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="8%">#</th>
+                            <th width="42%">包裹單號 / 追蹤碼</th>
+                            <th width="35%">掃瞄出貨時間</th>
+                            <th width="15%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="iopRecordTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 腳本處理 -->
     <script>
-        // ================= Supabase 憑證宣告 =================
-        const SUPABASE_URL = 'https://wdrloeyagqtbmpedtjiv.supabase.co'; // 請替換為你的 Project URL
-        const SUPABASE_ANON_KEY = 'sb_publishable_LwTsiPG3m8N59_G-EF5zsA_QmDZ2-UG'; // 請替換為你的 anon public key
+        // 大組別頁面切換控制
+        function switchMainSystem(sysId, btnElem) {
+            document.querySelectorAll('.system-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.main-sys-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById(sysId).classList.add('active');
+            btnElem.classList.add('active');
+
+            if (sysId === 'sys-video') {
+                const barcodeInput = document.getElementById('barcodeInput');
+                if (barcodeInput && !barcodeInput.readOnly) barcodeInput.focus();
+            } else if (sysId === 'sys-iop-ice') {
+                const iopInput = document.getElementById('iopBarcodeInput');
+                if (iopInput) iopInput.focus();
+            }
+        }
+
+        // =================================================================
+        // 組別一 JavaScript 邏輯 (出貨錄影時間紀錄系統)
+        // =================================================================
+        const SUPABASE_URL = 'https://wdrloeyagqtbmpedtjiv.supabase.co'; // 可改為你的錄影系統專用憑證
+        const SUPABASE_ANON_KEY = 'sb_publishable_LwTsiPG3m8N59_G-EF5zsA_QmDZ2-UG';
 
         var supabaseClientInstance = null;
 
-        // 音效系統
-        let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioCtxVideo = null;
+        function initAudioVideo() {
+            if (!audioCtxVideo) {
+                audioCtxVideo = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            if (audioCtxVideo.state === 'suspended') {
+                audioCtxVideo.resume();
             }
         }
 
         function playSuccessSound() {
             try {
-                initAudio();
-                const now = audioCtx.currentTime;
-                const osc1 = audioCtx.createOscillator();
-                const gain1 = audioCtx.createGain();
+                initAudioVideo();
+                const now = audioCtxVideo.currentTime;
+                const osc1 = audioCtxVideo.createOscillator();
+                const gain1 = audioCtxVideo.createGain();
                 osc1.type = 'sine';
                 osc1.frequency.setValueAtTime(1760, now);
                 gain1.gain.setValueAtTime(0.3, now);
                 gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
                 osc1.connect(gain1);
-                gain1.connect(audioCtx.destination);
+                gain1.connect(audioCtxVideo.destination);
                 osc1.start(now);
                 osc1.stop(now + 0.08);
 
-                const osc2 = audioCtx.createOscillator();
-                const gain2 = audioCtx.createGain();
+                const osc2 = audioCtxVideo.createOscillator();
+                const gain2 = audioCtxVideo.createGain();
                 osc2.type = 'sine';
                 osc2.frequency.setValueAtTime(2637, now + 0.1);
                 gain2.gain.setValueAtTime(0.3, now + 0.1);
                 gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 osc2.connect(gain2);
-                gain2.connect(audioCtx.destination);
+                gain2.connect(audioCtxVideo.destination);
                 osc2.start(now + 0.1);
                 osc2.stop(now + 0.2);
             } catch (e) {}
@@ -513,16 +620,16 @@
 
         function playDuplicateSound() {
             try {
-                initAudio();
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
+                initAudioVideo();
+                const now = audioCtxVideo.currentTime;
+                const osc = audioCtxVideo.createOscillator();
+                const gain = audioCtxVideo.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(280, now);
                 gain.gain.setValueAtTime(0.4, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
                 osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                gain.connect(audioCtxVideo.destination);
                 osc.start(now);
                 osc.stop(now + 0.45);
             } catch (e) {}
@@ -530,48 +637,38 @@
 
         function playErrorSound() {
             try {
-                initAudio();
+                initAudioVideo();
                 const times = [0, 0.12, 0.24];
                 times.forEach(t => {
-                    const now = audioCtx.currentTime + t;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
+                    const now = audioCtxVideo.currentTime + t;
+                    const osc = audioCtxVideo.createOscillator();
+                    const gain = audioCtxVideo.createGain();
                     osc.type = 'square';
                     osc.frequency.setValueAtTime(523.25, now);
                     gain.gain.setValueAtTime(0.3, now);
                     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
                     osc.connect(gain);
-                    gain.connect(audioCtx.destination);
+                    gain.connect(audioCtxVideo.destination);
                     osc.start(now);
                     osc.stop(now + 0.08);
                 });
             } catch (e) {}
         }
 
-        // 全域資料變數
         let records = JSON.parse(localStorage.getItem('shipping_records')) || [];
         let currentPage = 1;
         let pageSize = 20;
 
         const countElementMap = {
-            '蝦皮': 'cnt-shopee', 
-            'iOPEN Mall 常溫': 'cnt-iopen-room', 
-            'iOPEN Mall 冷凍': 'cnt-iopen-ice', 
-            '酷澎': 'cnt-coupang',
-            '官網': 'cnt-official', 
-            '客戶私訂': 'cnt-private'
+            '蝦皮': 'cnt-shopee', 'iOPEN Mall 常溫': 'cnt-iopen-room', 'iOPEN Mall 冷凍': 'cnt-iopen-ice',
+            '酷澎': 'cnt-coupang', '官網': 'cnt-official', '客戶私訂': 'cnt-private'
         };
 
         const tagClassMap = {
-            '蝦皮': 'tag-shopee', 
-            'iOPEN Mall 常溫': 'tag-iopen-room', 
-            'iOPEN Mall 冷凍': 'tag-iopen-ice', 
-            '酷澎': 'tag-coupang',
-            '官網': 'tag-official', 
-            '客戶私訂': 'tag-private'
+            '蝦皮': 'tag-shopee', 'iOPEN Mall 常溫': 'tag-iopen-room', 'iOPEN Mall 冷凍': 'tag-iopen-ice',
+            '酷澎': 'tag-coupang', '官網': 'tag-official', '客戶私訂': 'tag-private'
         };
 
-        // DOM 初始化事件
         window.addEventListener('DOMContentLoaded', () => {
             const todayStr = new Date().toISOString().split('T')[0];
             document.getElementById('queryStartDate').value = todayStr;
@@ -584,7 +681,6 @@
             setInterval(updateClock, 1000);
             updateClock();
 
-            // 安全初始化 Supabase
             initSupabaseAsync();
 
             document.getElementById('barcodeInput').addEventListener('keypress', function (e) {
@@ -603,7 +699,6 @@
             });
         });
 
-        // 異步初始化 Supabase，避免主執行緒卡死
         function initSupabaseAsync() {
             setTimeout(async () => {
                 try {
@@ -641,10 +736,9 @@
             localStorage.setItem('shipping_records', JSON.stringify(records));
         }
 
-        // 分頁切換
         function switchTab(tabId, btnElem) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#sys-video .tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#sys-video .tab-btn').forEach(el => el.classList.remove('active'));
             
             document.getElementById(tabId).classList.add('active');
             btnElem.classList.add('active');
@@ -657,7 +751,6 @@
             }
         }
 
-        // 平台選單切換
         function handlePlatformChange() {
             const platform = document.getElementById('platformType').value;
             const inputLabel = document.getElementById('inputLabel');
@@ -735,9 +828,8 @@
             processScan();
         }
 
-        // 核心掃描處理
         function processScan() {
-            initAudio();
+            initAudioVideo();
             const barcodeInput = document.getElementById('barcodeInput');
             let rawValue = barcodeInput.value.trim();
             const platform = document.getElementById('platformType').value;
@@ -832,7 +924,6 @@
                 status: 'active'
             };
 
-            // 1. 本地儲存 (確保即時寫入)
             playSuccessSound();
             records.unshift(newRecord);
             saveRecordsLocal();
@@ -847,7 +938,6 @@
             updateStats();
             renderScanRecentList();
 
-            // 2. 背景非同步同步至 Supabase
             if (supabaseClientInstance) {
                 setTimeout(() => {
                     supabaseClientInstance.from('shipping_records').insert([newRecord]).then(({ error }) => {
@@ -861,10 +951,8 @@
             const statusBox = document.getElementById('statusMessage');
             let icon = '🔊';
             let classMap = {
-                'default': 'status-default',
-                'success': 'status-success',
-                'duplicate': 'status-duplicate',
-                'error': 'status-error'
+                'default': 'status-default', 'success': 'status-success',
+                'duplicate': 'status-duplicate', 'error': 'status-error'
             };
 
             if (state === 'success') icon = '✅';
@@ -897,15 +985,7 @@
         }
 
         function updateStats() {
-            const counts = {
-                '蝦皮': 0, 
-                'iOPEN Mall 常溫': 0, 
-                'iOPEN Mall 冷凍': 0, 
-                '酷澎': 0,
-                '官網': 0, 
-                '客戶私訂': 0
-            };
-
+            const counts = { '蝦皮': 0, 'iOPEN Mall 常溫': 0, 'iOPEN Mall 冷凍': 0, '酷澎': 0, '官網': 0, '客戶私訂': 0 };
             const todayStr = new Date().toISOString().split('T')[0];
 
             records.forEach(r => {
@@ -1043,7 +1123,6 @@
             }
 
             let csvContent = "\uFEFF序號,包貨時間,訂單平台,單號/姓名,撿貨人員,包貨人員,狀態\n";
-
             records.forEach((r, idx) => {
                 const statusStr = r.status === 'cancelled' ? '已取消' : '正常';
                 csvContent += `${records.length - idx},"${r.timestamp}","${r.type}","${r.barcode}","${r.picker}","${r.packer}","${statusStr}"\n`;
@@ -1067,6 +1146,298 @@
             const mm = String(date.getMinutes()).padStart(2, '0');
             const ss = String(date.getSeconds()).padStart(2, '0');
             return `${y}/${m}/${d} ${hh}:${mm}:${ss}`;
+        }
+
+
+        // =================================================================
+        // 組別二 JavaScript 邏輯 (IOP 冷凍包裹出貨掃描紀錄系統)
+        // =================================================================
+        const IOP_SUPABASE_URL = 'https://qwsxcnrjwfmjnqxnehln.supabase.co';
+        const IOP_SUPABASE_KEY = 'sb_publishable_pRJ3GQPiIb3itDVN43sung_Xr2PFr2n';
+        
+        let iopDb = null;
+        try {
+            if (window.supabase) {
+                iopDb = supabase.createClient(IOP_SUPABASE_URL, IOP_SUPABASE_KEY);
+            }
+        } catch (e) {
+            console.warn("IOP 冷凍 Supabase 連線失敗", e);
+        }
+
+        let iopRecords = [];
+        
+        const iopInput = document.getElementById('iopBarcodeInput');
+        const iopTableBody = document.getElementById('iopRecordTable');
+        const iopStatusMsg = document.getElementById('iopStatusMessage');
+        const iopTodayCountEl = document.getElementById('iopTodayCount');
+        const iopLastBarcodeEl = document.getElementById('iopLastBarcode');
+        const iopSearchInput = document.getElementById('iopSearchInput');
+        const iopDateInput = document.getElementById('iopDateInput');
+
+        let iopAudioCtx = null;
+
+        function iopInitAudio() {
+            if (!iopAudioCtx) {
+                iopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (iopAudioCtx.state === 'suspended') {
+                iopAudioCtx.resume();
+            }
+        }
+
+        function iopPlaySound(type) {
+            iopInitAudio();
+            const now = iopAudioCtx.currentTime;
+
+            if (type === 'success') {
+                iopPlayTone(1046, now, 0.08, 'sine', 0.8);
+                iopPlayTone(1318, now + 0.09, 0.15, 'sine', 0.9);
+            } else if (type === 'duplicate') {
+                iopPlayTone(300, now, 0.12, 'sawtooth', 0.95);
+                iopPlayTone(300, now + 0.15, 0.12, 'sawtooth', 0.95);
+                iopPlayTone(300, now + 0.30, 0.18, 'sawtooth', 0.95);
+            } else if (type === 'error') {
+                iopPlayTone(220, now, 0.25, 'triangle', 0.8);
+            }
+        }
+
+        function iopPlayTone(freq, startTime, duration, waveType, maxGain) {
+            const osc = iopAudioCtx.createOscillator();
+            const gain = iopAudioCtx.createGain();
+            osc.type = waveType;
+            osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0.01, startTime);
+            gain.gain.linearRampToValueAtTime(maxGain, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+            osc.connect(gain);
+            gain.connect(iopAudioCtx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        function iopGetTodayPrefix() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+
+        async function iopLoadCloudRecords() {
+            if (!iopDb) return;
+            const { data, error } = await iopDb
+                .from('shipments')
+                .select('barcode, timestamp');
+
+            if (error) {
+                console.error('IOP 雲端讀取失敗:', error);
+                iopShowStatus('⚠️ 雲端資料庫讀取失敗', 'error');
+                return;
+            }
+
+            iopRecords = (data || []).reverse();
+            
+            const todayISO = new Date().toISOString().split('T')[0];
+            iopDateInput.value = todayISO;
+
+            iopUpdateDashboard();
+            iopHandleSearchAndFilter();
+            iopSubscribeRealtime();
+        }
+
+        function iopSubscribeRealtime() {
+            if (!iopDb) return;
+            iopDb.channel('public:shipments')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'shipments' },
+                    (payload) => {
+                        if (payload.eventType === 'INSERT') {
+                            const newRecord = payload.new;
+                            const exists = iopRecords.some(r => r.barcode === newRecord.barcode);
+                            if (!exists) {
+                                iopRecords.unshift({ barcode: newRecord.barcode, timestamp: newRecord.timestamp });
+                                iopUpdateDashboard();
+                                iopHandleSearchAndFilter(true);
+                            }
+                        } else if (payload.eventType === 'DELETE') {
+                            const deletedBarcode = payload.old.barcode;
+                            iopRecords = iopRecords.filter(r => r.barcode !== deletedBarcode);
+                            iopUpdateDashboard();
+                            iopHandleSearchAndFilter();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        iopLoadCloudRecords();
+
+        document.addEventListener('click', (e) => {
+            if (document.getElementById('sys-iop-ice').classList.contains('active')) {
+                const selection = window.getSelection();
+                if (selection && selection.toString().length > 0) return;
+
+                if (e.target !== iopSearchInput && e.target !== iopDateInput && !e.target.classList.contains('btn-danger')) {
+                    if (iopInput) iopInput.focus();
+                }
+                iopInitAudio();
+            }
+        });
+
+        if (iopInput) {
+            iopInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    const barcode = iopInput.value.trim();
+                    
+                    if (barcode.length !== 20) {
+                        iopShowStatus(`⚠️ 條碼格式錯誤！輸入長度為 ${barcode.length} 碼，必須精確為 20 碼！`, 'error');
+                        iopPlaySound('error');
+                        iopInput.value = '';
+                        return;
+                    }
+
+                    iopAddRecord(barcode);
+                    iopInput.value = '';
+                }
+            });
+        }
+
+        async function iopAddRecord(barcode) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            const timestamp = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+
+            const isDuplicate = iopRecords.some(r => r.barcode === barcode);
+
+            if (isDuplicate) {
+                const existingItem = iopRecords.find(r => r.barcode === barcode);
+                iopShowStatus(`⚠️ 重複掃瞄！單號 [${barcode}] 已於 ${existingItem.timestamp} 紀錄過`, 'duplicate');
+                iopPlaySound('duplicate');
+                
+                document.body.classList.remove('flash-danger');
+                void document.body.offsetWidth;
+                document.body.classList.add('flash-danger');
+
+            } else {
+                const newObj = { barcode, timestamp };
+
+                iopRecords.unshift(newObj);
+                iopUpdateDashboard();
+                iopHandleSearchAndFilter(true);
+
+                iopShowStatus(`✅ 掃瞄成功！[${barcode}] - ${timestamp}`, 'success');
+                iopPlaySound('success');
+
+                if (iopDb) {
+                    const { error } = await iopDb.from('shipments').insert([newObj]);
+                    if (error) console.error('IOP 背景寫入失敗:', error);
+                }
+            }
+        }
+
+        async function iopDeleteRecord(barcode) {
+            if (confirm(`確定要取消單號 [${barcode}] 的出貨紀錄嗎？\n此動作將同步從雲端刪除！`)) {
+                iopRecords = iopRecords.filter(r => r.barcode !== barcode);
+                iopUpdateDashboard();
+                iopHandleSearchAndFilter();
+                
+                iopShowStatus(`🗑️ 已取消出貨單號: [${barcode}]`, 'duplicate');
+
+                if (iopDb) {
+                    const { error } = await iopDb.from('shipments').delete().eq('barcode', barcode);
+                    if (error) {
+                        console.error('IOP 刪除失敗:', error);
+                        iopShowStatus(`❌ 雲端刪除失敗: ${error.message}`, 'error');
+                    }
+                }
+            }
+        }
+
+        function iopShowStatus(msg, type) {
+            iopStatusMsg.innerText = msg;
+            iopStatusMsg.className = `iop-status-box iop-status-${type}`;
+            iopStatusMsg.style.display = 'block';
+        }
+
+        function iopUpdateDashboard() {
+            const todayPrefix = iopGetTodayPrefix();
+            const todayRecords = iopRecords.filter(r => r.timestamp && r.timestamp.includes(todayPrefix));
+            
+            iopTodayCountEl.innerText = `${todayRecords.length} 件`;
+            iopLastBarcodeEl.innerText = iopRecords.length > 0 ? iopRecords[0].barcode : '無';
+        }
+
+        function iopHandleSearchAndFilter(isRealtimeInsert = false) {
+            const query = iopSearchInput.value.trim().toLowerCase();
+            const selectedDate = iopDateInput.value;
+
+            let filtered = iopRecords;
+
+            if (selectedDate) {
+                const formattedFilterDate = selectedDate.replace(/-/g, '/');
+                filtered = filtered.filter(r => r.timestamp && r.timestamp.includes(formattedFilterDate));
+            }
+
+            if (query) {
+                filtered = filtered.filter(r => r.barcode.toLowerCase().includes(query));
+            }
+
+            iopRenderTable(filtered, isRealtimeInsert);
+        }
+
+        function iopResetFilter() {
+            iopSearchInput.value = '';
+            iopDateInput.value = new Date().toISOString().split('T')[0];
+            iopHandleSearchAndFilter();
+        }
+
+        function iopRenderTable(list, isRealtimeInsert = false) {
+            iopTableBody.innerHTML = '';
+            if (list.length === 0) {
+                iopTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">今天尚無出貨紀錄</td></tr>';
+                return;
+            }
+
+            list.forEach((item, index) => {
+                const isNewRow = (index === 0 && isRealtimeInsert) ? 'class="row-highlight"' : '';
+
+                const row = `<tr ${isNewRow}>
+                    <td>${list.length - index}</td>
+                    <td><strong>${item.barcode}</strong></td>
+                    <td>${item.timestamp}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="iopDeleteRecord('${item.barcode}')">取消出貨</button>
+                    </td>
+                </tr>`;
+                iopTableBody.innerHTML += row;
+            });
+        }
+
+        function iopExportCSV() {
+            if (iopRecords.length === 0) {
+                alert('目前無紀錄可匯出！');
+                return;
+            }
+            
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF單號,掃瞄時間\n";
+            iopRecords.forEach(r => {
+                csvContent += `"${r.barcode}","${r.timestamp}"\n`;
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `iop_ice_shipment_records_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
