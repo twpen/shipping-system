@@ -8,8 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
     <style>
         :root {
-            --primary-color: #1e293b;
-            --secondary-color: #334155;
+            --primary-color: #0f172a;
+            --secondary-color: #1e293b;
             --accent-color: #2563eb;
             --success-color: #16a34a;
             --warning-color: #d97706;
@@ -28,97 +28,138 @@
         }
 
         * { box-sizing: border-box; font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
-        body { background-color: var(--bg-color); color: #0f172a; line-height: 1.5; padding-bottom: 60px; font-size: 16px; transition: background-color 0.2s ease; }
+        body { background-color: var(--bg-color); color: #0f172a; line-height: 1.5; padding-bottom: 40px; font-size: 16px; transition: background-color 0.2s ease; }
 
-        /* 頂部雙大系統導覽列 */
-        .main-system-nav {
-            display: flex;
-            justify-content: center;
-            background: #0f172a;
-            padding: 8px 16px;
-            gap: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-        .main-sys-btn {
-            background: #1e293b;
-            color: #94a3b8;
-            border: 2px solid #334155;
-            padding: 12px 28px;
-            font-size: 19px;
-            font-weight: 800;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.25s ease;
+        /* 🔥 超精簡一體化頂部導覽列 */
+        .compact-navbar {
+            background-color: #0f172a;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            padding: 8px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            height: 54px;
         }
-        .main-sys-btn:hover { color: #ffffff; background: #334155; }
-        .main-sys-btn.active {
+
+        .nav-group-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* 膠囊式主系統切換鈕 */
+        .system-segmented-control {
+            display: flex;
+            background: #1e293b;
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .sys-seg-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 6px 16px;
+            font-size: 15px;
+            font-weight: 800;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sys-seg-btn:hover { color: #f8fafc; }
+        .sys-seg-btn.active {
             background: var(--accent-color);
             color: #ffffff;
-            border-color: #60a5fa;
-            box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+        }
+
+        /* 錄影系統子分頁 (精簡標籤) */
+        .sub-tab-group {
+            display: flex;
+            gap: 6px;
+            border-left: 2px solid #334155;
+            padding-left: 16px;
+        }
+
+        .sub-tab-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sub-tab-btn:hover { color: #f8fafc; background: rgba(255,255,255,0.06); }
+        .sub-tab-btn.active {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            font-weight: 800;
+        }
+
+        .nav-sys-title {
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .system-section { display: none; }
         .system-section.active { display: block; }
 
-        /* ========== 組別一：錄影時間系統樣式 ========== */
-        header { 
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
-            color: white; text-align: center; padding: 18px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
-        }
-        header h1 { font-size: 24px; font-weight: 800; letter-spacing: 1px; }
-
-        .tab-nav { display: flex; justify-content: center; background-color: var(--secondary-color); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-        .tab-btn { 
-            background: none; border: none; color: #94a3b8; padding: 14px 32px; font-size: 17px; font-weight: bold; 
-            cursor: pointer; transition: all 0.25s ease; outline: none; display: flex; align-items: center; gap: 8px; 
-            border-bottom: 4px solid transparent;
-        }
-        .tab-btn:hover { color: #f8fafc; background-color: rgba(255,255,255,0.05); }
-        .tab-btn.active { color: #ffffff; background-color: rgba(255,255,255,0.12); border-bottom-color: #38bdf8; }
-
-        .container { max-width: 1350px; margin: 20px auto; padding: 0 16px; }
+        .container { max-width: 1350px; margin: 16px auto; padding: 0 16px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         .card { 
-            background-color: var(--card-bg); border-radius: 12px; 
-            box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.06); 
-            border: 1px solid var(--border-color); padding: 22px; margin-bottom: 20px; 
+            background-color: var(--card-bg); border-radius: 10px; 
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); 
+            border: 1px solid var(--border-color); padding: 20px; margin-bottom: 16px; 
             position: relative;
         }
         .card-title { 
-            font-size: 19px; font-weight: 800; margin-bottom: 18px; border-bottom: 2px solid #e2e8f0; 
-            padding-bottom: 10px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center; 
+            font-size: 18px; font-weight: 800; margin-bottom: 14px; border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 8px; color: var(--secondary-color); display: flex; justify-content: space-between; align-items: center; 
         }
 
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
-        .query-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        .query-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         @media (max-width: 900px) { .query-form-grid { grid-template-columns: 1fr; } }
 
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { font-weight: 800; font-size: 15px; color: #334155; }
         
         .form-control { 
-            width: 100%; padding: 12px 14px; border: 2px solid var(--border-color); border-radius: 8px; 
+            width: 100%; padding: 10px 14px; border: 2px solid var(--border-color); border-radius: 8px; 
             font-size: 16px; font-weight: 600; transition: all 0.2s; background-color: #f8fafc; color: #0f172a;
         }
         .form-control:focus { border-color: var(--accent-color); background-color: #fff; outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2); }
         
-        .barcode-input-wrapper { display: flex; gap: 12px; margin-top: 4px; position: relative; }
+        .barcode-input-wrapper { display: flex; gap: 10px; margin-top: 4px; position: relative; }
         .barcode-input-wrapper input { 
             font-size: 22px; font-weight: 800; letter-spacing: 1px; color: #0f172a; background-color: #ffffff;
-            border: 3px solid #94a3b8; height: 56px;
+            border: 3px solid #94a3b8; height: 52px;
         }
         .barcode-input-wrapper input:focus { border-color: var(--accent-color); background-color: #f0f7ff; }
 
         .date-range-group { display: flex; align-items: center; gap: 8px; }
 
         .btn { 
-            padding: 12px 24px; border: none; border-radius: 8px; font-weight: 800; font-size: 16px; 
+            padding: 10px 22px; border: none; border-radius: 8px; font-weight: 800; font-size: 16px; 
             cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }
@@ -139,48 +180,48 @@
 
         /* 看板與狀態 */
         .status-display {
-            margin-top: 18px; padding: 18px 22px; border-radius: 12px; font-size: 20px; font-weight: 800;
-            display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: all 0.3s ease;
+            margin-top: 16px; padding: 16px 20px; border-radius: 10px; font-size: 19px; font-weight: 800;
+            display: flex; align-items: center; justify-content: space-between; gap: 14px; transition: all 0.3s ease;
         }
-        .status-display .status-icon { font-size: 36px; display: flex; align-items: center; justify-content: center; }
+        .status-display .status-icon { font-size: 32px; display: flex; align-items: center; justify-content: center; }
         .status-display .status-text { flex-grow: 1; }
-        .status-display .status-time { font-size: 18px; font-weight: 800; padding: 6px 14px; border-radius: 8px; background: rgba(255,255,255,0.75); }
+        .status-display .status-time { font-size: 17px; font-weight: 800; padding: 5px 12px; border-radius: 6px; background: rgba(255,255,255,0.8); }
 
-        .status-default { background-color: #f1f5f9; color: #475569; border-left: 10px solid #94a3b8; }
-        .status-success { background-color: #dcfce7; color: #14532d; border-left: 10px solid var(--success-color); }
-        .status-duplicate { background-color: #fef3c7; color: #78350f; border-left: 10px solid var(--warning-color); }
-        .status-error { background-color: #fee2e2; color: #7f1d1d; border-left: 10px solid var(--danger-color); }
+        .status-default { background-color: #f1f5f9; color: #475569; border-left: 8px solid #94a3b8; }
+        .status-success { background-color: #dcfce7; color: #14532d; border-left: 8px solid var(--success-color); }
+        .status-duplicate { background-color: #fef3c7; color: #78350f; border-left: 8px solid var(--warning-color); }
+        .status-error { background-color: #fee2e2; color: #7f1d1d; border-left: 8px solid var(--danger-color); }
 
         .status-detail-text {
-            font-size: 22px !important; font-weight: 900 !important; color: #000000 !important; margin-top: 4px;
+            font-size: 20px !important; font-weight: 900 !important; color: #000000 !important; margin-top: 2px;
             display: inline-block; letter-spacing: 1px; background-color: rgba(255, 255, 255, 0.6); padding: 2px 8px; border-radius: 6px;
         }
 
         /* 專屬懸浮數字鍵盤 */
         .numpad-container {
-            display: none; position: absolute; top: 65px; left: 0; z-index: 999; background: #ffffff;
-            border: 3px solid var(--accent-color); border-radius: 14px; padding: 14px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); width: 310px;
+            display: none; position: absolute; top: 60px; left: 0; z-index: 999; background: #ffffff;
+            border: 3px solid var(--accent-color); border-radius: 12px; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); width: 300px;
         }
-        .numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .numpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .num-btn {
-            height: 56px; font-size: 22px; font-weight: 800; border: 2px solid #cbd5e1; background-color: #f8fafc; color: #0f172a;
+            height: 52px; font-size: 20px; font-weight: 800; border: 2px solid #cbd5e1; background-color: #f8fafc; color: #0f172a;
             border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
         }
         .num-btn:active { background-color: var(--accent-color); color: white; transform: scale(0.95); }
         .num-btn-clear { background-color: #fee2e2; color: #dc2626; border-color: #fca5a5; }
         .num-btn-del { background-color: #fef3c7; color: #d97706; border-color: #fcd34d; }
-        .num-btn-submit { grid-column: span 3; background-color: var(--success-color); color: white; height: 46px; font-size: 18px; margin-top: 4px; }
+        .num-btn-submit { grid-column: span 3; background-color: var(--success-color); color: white; height: 44px; font-size: 17px; margin-top: 2px; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-top: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 8px; }
         .stat-card { 
-            border: 2px solid var(--border-color); border-radius: 10px; padding: 14px 10px; text-align: center; 
+            border: 2px solid var(--border-color); border-radius: 8px; padding: 12px 8px; text-align: center; 
             background-color: #ffffff; transition: transform 0.2s, box-shadow 0.2s;
         }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-        .stat-card .title { font-size: 14px; color: #64748b; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .stat-card .count { font-size: 28px; font-weight: 900; color: #0f172a; }
+        .stat-card .title { font-size: 13px; color: #64748b; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .stat-card .count { font-size: 26px; font-weight: 900; color: #0f172a; }
 
-        .tag-badge { padding: 4px 12px; border-radius: 20px; color: white; font-size: 13px; font-weight: 800; display: inline-block; }
+        .tag-badge { padding: 4px 10px; border-radius: 20px; color: white; font-size: 13px; font-weight: 800; display: inline-block; }
         .tag-shopee { background-color: var(--tag-shopee); }
         .tag-iopen-room { background-color: var(--tag-iopen-room); }
         .tag-iopen-ice { background-color: var(--tag-iopen-ice); }
@@ -190,47 +231,47 @@
 
         .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1.5px solid var(--border-color); }
         .data-table { width: 100%; border-collapse: collapse; font-size: 15px; background-color: #fff; }
-        .data-table th { background-color: #f8fafc; color: #334155; font-weight: 800; padding: 12px; text-align: center; white-space: nowrap; border-bottom: 2px solid var(--border-color); }
-        .data-table td { border-bottom: 1px solid var(--border-color); padding: 12px; text-align: center; color: #1e293b; font-weight: 600; }
+        .data-table th { background-color: #f8fafc; color: #334155; font-weight: 800; padding: 10px; text-align: center; white-space: nowrap; border-bottom: 2px solid var(--border-color); }
+        .data-table td { border-bottom: 1px solid var(--border-color); padding: 10px; text-align: center; color: #1e293b; font-weight: 600; }
         .data-table tbody tr:hover { background-color: #f1f5f9; }
 
-        .time-badge { color: #b91c1c; font-weight: 800; background-color: #fef2f2; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 14px; }
+        .time-badge { color: #b91c1c; font-weight: 800; background-color: #fef2f2; padding: 3px 8px; border-radius: 6px; font-family: monospace; font-size: 14px; }
         .badge-cancelled { background-color: #94a3b8; color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; }
         .row-cancelled { background-color: #fef2f2 !important; text-decoration: line-through; color: #94a3b8; }
         .row-cancelled td { color: #94a3b8; }
         .row-cancelled .time-badge { text-decoration: line-through; opacity: 0.5; }
 
-        .empty-msg { text-align: center; color: #94a3b8; padding: 30px; font-size: 16px; font-weight: 600; }
+        .empty-msg { text-align: center; color: #94a3b8; padding: 24px; font-size: 15px; font-weight: 600; }
         .hint-text { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
 
-        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
-        .pagination-controls { display: flex; align-items: center; gap: 10px; }
+        .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+        .pagination-controls { display: flex; align-items: center; gap: 8px; }
 
-        /* ========== 組別二：IOP 冷凍專用系統樣式 ========== */
-        .iop-container { max-width: 950px; margin: 20px auto; padding: 0 20px; }
-        .iop-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .iop-card { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #007bff; }
+        /* IOP 冷凍專用樣式 */
+        .iop-container { max-width: 950px; margin: 16px auto; padding: 0 16px; }
+        .iop-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .iop-card { background: white; padding: 12px 18px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #007bff; }
         .iop-card .title { font-size: 13px; color: #6c757d; font-weight: bold; }
-        .iop-card .value { font-size: 24px; color: #212529; font-weight: bold; margin-top: 5px; }
+        .iop-card .value { font-size: 22px; color: #212529; font-weight: bold; margin-top: 4px; }
 
-        .iop-input-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .iop-input-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 16px; }
         .iop-input-section { display: flex; gap: 10px; }
-        .iop-input-section input[type="text"] { flex: 1; padding: 12px; font-size: 18px; border: 2px solid #ced4da; border-radius: 6px; outline: none; }
+        .iop-input-section input[type="text"] { flex: 1; padding: 10px 14px; font-size: 17px; border: 2px solid #ced4da; border-radius: 6px; outline: none; }
         .iop-input-section input[type="text"]:focus { border-color: #007bff; }
 
-        .iop-status-box { padding: 15px; font-size: 18px; font-weight: bold; border-radius: 6px; margin-top: 15px; text-align: center; display: none; }
+        .iop-status-box { padding: 12px; font-size: 17px; font-weight: bold; border-radius: 6px; margin-top: 12px; text-align: center; display: none; }
         .iop-status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .iop-status-duplicate { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .iop-status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-        .iop-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .iop-filter-group { display: flex; gap: 10px; align-items: center; }
-        .iop-search-box, .iop-date-box { padding: 8px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
-        .iop-search-box { width: 220px; }
+        .iop-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .iop-filter-group { display: flex; gap: 8px; align-items: center; }
+        .iop-search-box, .iop-date-box { padding: 6px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        .iop-search-box { width: 200px; }
 
         .iop-table-container { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
         .iop-table-container table { width: 100%; border-collapse: collapse; }
-        .iop-table-container th, .iop-table-container td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        .iop-table-container th, .iop-table-container td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #dee2e6; }
         .iop-table-container th { background-color: #f8f9fa; color: #495057; font-weight: 600; }
         .iop-table-container tr:nth-child(even) { background-color: #fcfcfc; }
         .iop-table-container tr:hover { background-color: #f1f3f5; }
@@ -244,29 +285,39 @@
 </head>
 <body>
 
-    <!-- 最上層：大系統導覽切換列 -->
-    <div class="main-system-nav">
-        <button class="main-sys-btn active" onclick="switchMainSystem('sys-video', this)">
-            📹 包裹出貨錄影時間紀錄系統
-        </button>
-        <button class="main-sys-btn" onclick="switchMainSystem('sys-iop-ice', this)">
-            ❄️ IOP 冷凍包裹出貨掃描紀錄系統
-        </button>
+    <!-- 精簡一體化頂部導覽列 -->
+    <div class="compact-navbar">
+        <div class="nav-group-left">
+            <!-- 膠囊切換鈕 -->
+            <div class="system-segmented-control">
+                <button class="sys-seg-btn active" onclick="switchMainSystem('sys-video', this)">
+                    📹 出貨錄影紀錄
+                </button>
+                <button class="sys-seg-btn" onclick="switchMainSystem('sys-iop-ice', this)">
+                    ❄️ IOP 冷凍紀錄
+                </button>
+            </div>
+
+            <!-- 動態子分頁（僅在選擇錄影紀錄時顯示） -->
+            <div id="videoSubTabs" class="sub-tab-group">
+                <button class="sub-tab-btn active" onclick="switchTab('scan-tab', this)">
+                    📦 包貨掃描
+                </button>
+                <button class="sub-tab-btn" onclick="switchTab('query-tab', this)">
+                    🔍 歷史查詢
+                </button>
+            </div>
+        </div>
+
+        <div class="nav-sys-title">
+            包裹出貨管理系統 v2.0
+        </div>
     </div>
 
     <!-- ================================================================= -->
     <!-- 大組別一：包裹出貨錄影時間紀錄系統                             -->
     <!-- ================================================================= -->
     <div id="sys-video" class="system-section active">
-        <header>
-            <h1>📹 包裹出貨錄影時間紀錄系統</h1>
-        </header>
-
-        <div class="tab-nav">
-            <button class="tab-btn active" onclick="switchTab('scan-tab', this)">📦 包貨掃描作業</button>
-            <button class="tab-btn" onclick="switchTab('query-tab', this)">🔍 包裹歷史查詢</button>
-        </div>
-
         <div class="container">
             <!-- 分頁一：包貨掃描作業 -->
             <div id="scan-tab" class="tab-content active">
@@ -365,9 +416,9 @@
                 <div class="card">
                     <div class="card-title">
                         <span>現場歷史紀錄清單</span>
-                        <div style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+                        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
                             <label for="pageSizeSelect">每頁顯示：</label>
-                            <select id="pageSizeSelect" class="form-control" style="padding: 6px 12px; width: auto;" onchange="changePageSize()">
+                            <select id="pageSizeSelect" class="form-control" style="padding: 4px 10px; width: auto;" onchange="changePageSize()">
                                 <option value="10">10 筆</option>
                                 <option value="20" selected>20 筆</option>
                                 <option value="50">50 筆</option>
@@ -396,7 +447,7 @@
                     </div>
 
                     <div class="pagination-bar">
-                        <span id="pageInfo" style="font-weight: 700; color: #64748b;">第 1 / 1 頁，共 0 筆</span>
+                        <span id="pageInfo" style="font-weight: 700; color: #64748b; font-size: 14px;">第 1 / 1 頁，共 0 筆</span>
                         <div class="pagination-controls">
                             <button id="btnPrevPage" class="btn btn-secondary" onclick="prevPage()" disabled>⬅️ 上一頁</button>
                             <button id="btnNextPage" class="btn btn-secondary" onclick="nextPage()" disabled>下一頁 ➡️</button>
@@ -465,7 +516,7 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 14px; margin-top: 22px;">
+                    <div style="display: flex; gap: 12px; margin-top: 18px;">
                         <button class="btn btn-primary" onclick="filterRecords()">🔍 開始查詢</button>
                         <button class="btn btn-success" onclick="exportCSV()">📥 匯出報表 (CSV)</button>
                     </div>
@@ -474,7 +525,7 @@
                 <div class="card">
                     <div class="card-title">
                         <span>查詢結果</span>
-                        <span id="queryCountBadge" style="font-size: 16px; font-weight: normal; color: #64748b;">共 0 筆紀錄</span>
+                        <span id="queryCountBadge" style="font-size: 15px; font-weight: normal; color: #64748b;">共 0 筆紀錄</span>
                     </div>
                     <div class="table-responsive">
                         <table class="data-table">
@@ -504,10 +555,6 @@
     <!-- ================================================================= -->
     <div id="sys-iop-ice" class="system-section">
         <div class="iop-container">
-            <h2 style="margin-bottom: 20px; color: #1e293b; border-bottom: 3px solid #007bff; padding-bottom: 10px;">
-                📦 IOP 冷凍包裹出貨掃瞄紀錄系統
-            </h2>
-
             <div class="iop-dashboard">
                 <div class="iop-card">
                     <div class="title">今日已出貨數量</div>
@@ -521,7 +568,7 @@
 
             <div class="iop-input-card">
                 <div class="iop-input-section">
-                    <input type="text" id="iopBarcodeInput" placeholder="請將條碼槍對準單號刷入 (限 20 码)..." autofocus autocomplete="off">
+                    <input type="text" id="iopBarcodeInput" placeholder="請將條碼槍對準單號刷入 (限 20 碼)..." autofocus autocomplete="off">
                 </div>
                 <div id="iopStatusMessage" class="iop-status-box"></div>
             </div>
@@ -558,15 +605,19 @@
         // 大組別頁面切換控制
         function switchMainSystem(sysId, btnElem) {
             document.querySelectorAll('.system-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.main-sys-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sys-seg-btn').forEach(el => el.classList.remove('active'));
 
             document.getElementById(sysId).classList.add('active');
             btnElem.classList.add('active');
 
+            const subTabGroup = document.getElementById('videoSubTabs');
+
             if (sysId === 'sys-video') {
+                if (subTabGroup) subTabGroup.style.display = 'flex';
                 const barcodeInput = document.getElementById('barcodeInput');
                 if (barcodeInput && !barcodeInput.readOnly) barcodeInput.focus();
             } else if (sysId === 'sys-iop-ice') {
+                if (subTabGroup) subTabGroup.style.display = 'none';
                 const iopInput = document.getElementById('iopBarcodeInput');
                 if (iopInput) iopInput.focus();
             }
@@ -738,7 +789,7 @@
 
         function switchTab(tabId, btnElem) {
             document.querySelectorAll('#sys-video .tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('#sys-video .tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#videoSubTabs .sub-tab-btn').forEach(el => el.classList.remove('active'));
             
             document.getElementById(tabId).classList.add('active');
             btnElem.classList.add('active');
