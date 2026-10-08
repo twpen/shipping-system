@@ -24,6 +24,7 @@
             --tag-iopen-ice: #028090;
             --tag-official: #2563eb;
             --tag-private: #7c3aed;
+            --tag-coupang: #e61924;
         }
 
         * { box-sizing: border-box; font-family: "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, Roboto, sans-serif; margin: 0; padding: 0; }
@@ -47,7 +48,7 @@
         .tab-btn:hover { color: #f8fafc; background-color: rgba(255,255,255,0.05); }
         .tab-btn.active { color: #ffffff; background-color: rgba(255,255,255,0.12); border-bottom-color: #38bdf8; }
 
-        .container { max-width: 1250px; margin: 24px auto; padding: 0 16px; }
+        .container { max-width: 1350px; margin: 24px auto; padding: 0 16px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
@@ -180,7 +181,7 @@
         .num-btn-del { background-color: #fef3c7; color: #d97706; border-color: #fcd34d; }
         .num-btn-submit { grid-column: span 3; background-color: var(--success-color); color: white; height: 50px; font-size: 20px; margin-top: 4px; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 10px; }
         .stat-card { 
             border: 2px solid var(--border-color); border-radius: 10px; padding: 16px 12px; text-align: center; 
             background-color: #ffffff; transition: transform 0.2s, box-shadow 0.2s;
@@ -195,6 +196,7 @@
         .tag-iopen-ice { background-color: var(--tag-iopen-ice); }
         .tag-official { background-color: var(--tag-official); }
         .tag-private { background-color: var(--tag-private); }
+        .tag-coupang { background-color: var(--tag-coupang); }
 
         .table-responsive { overflow-x: auto; margin-top: 12px; border-radius: 10px; border: 1.5px solid var(--border-color); }
         .data-table { width: 100%; border-collapse: collapse; font-size: 16px; background-color: #fff; }
@@ -244,6 +246,7 @@
                             <option value="蝦皮">蝦皮 (Shopee)</option>
                             <option value="iOPEN Mall 常溫">iOPEN Mall 常溫</option>
                             <option value="iOPEN Mall 冷凍">iOPEN Mall 冷凍</option>
+                            <option value="酷澎">酷澎 (Coupang)</option>
                             <option value="官網">官網 (Official Site)</option>
                             <option value="客戶私訂">客戶私訂</option>
                         </select>
@@ -320,6 +323,7 @@
                     <div class="stat-card"><div class="title"><span class="tag-badge tag-shopee">蝦皮</span></div><div class="count" id="cnt-shopee">0</div></div>
                     <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen-room">iOPEN 常溫</span></div><div class="count" id="cnt-iopen-room">0</div></div>
                     <div class="stat-card"><div class="title"><span class="tag-badge tag-iopen-ice">iOPEN 冷凍</span></div><div class="count" id="cnt-iopen-ice">0</div></div>
+                    <div class="stat-card"><div class="title"><span class="tag-badge tag-coupang">酷澎</span></div><div class="count" id="cnt-coupang">0</div></div>
                     <div class="stat-card"><div class="title"><span class="tag-badge tag-official">官網</span></div><div class="count" id="cnt-official">0</div></div>
                     <div class="stat-card"><div class="title"><span class="tag-badge tag-private">客戶私訂</span></div><div class="count" id="cnt-private">0</div></div>
                 </div>
@@ -395,6 +399,7 @@
                             <option value="蝦皮">蝦皮</option>
                             <option value="iOPEN Mall 常溫">iOPEN Mall 常溫</option>
                             <option value="iOPEN Mall 冷凍">iOPEN Mall 冷凍</option>
+                            <option value="酷澎">酷澎</option>
                             <option value="官網">官網</option>
                             <option value="客戶私訂">客戶私訂</option>
                         </select>
@@ -461,7 +466,7 @@
     </div>
 
     <script>
-        // ================= Supabase 唯一全域憑證宣告 =================
+        // ================= Supabase 憑證宣告 =================
         const SUPABASE_URL = 'https://wdrloeyagqtbmpedtjiv.supabase.co'; // 請替換為你的 Project URL
         const SUPABASE_ANON_KEY = 'sb_publishable_LwTsiPG3m8N59_G-EF5zsA_QmDZ2-UG'; // 請替換為你的 anon public key
 
@@ -552,6 +557,7 @@
             '蝦皮': 'cnt-shopee', 
             'iOPEN Mall 常溫': 'cnt-iopen-room', 
             'iOPEN Mall 冷凍': 'cnt-iopen-ice', 
+            '酷澎': 'cnt-coupang',
             '官網': 'cnt-official', 
             '客戶私訂': 'cnt-private'
         };
@@ -560,6 +566,7 @@
             '蝦皮': 'tag-shopee', 
             'iOPEN Mall 常溫': 'tag-iopen-room', 
             'iOPEN Mall 冷凍': 'tag-iopen-ice', 
+            '酷澎': 'tag-coupang',
             '官網': 'tag-official', 
             '客戶私訂': 'tag-private'
         };
@@ -669,6 +676,11 @@
                 inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，請輸入設定之數字編號";
                 inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
                 inputElem.readOnly = true;
+            } else if (platform === '酷澎') {
+                inputLabel.innerText = "請使用懸浮數字鍵盤輸入酷澎訂單編號 (15碼數字)：";
+                inputHint.innerText = "💡 提示：點擊輸入框會開啟專屬數字鍵盤，必須為 15 碼純數字組合";
+                inputElem.placeholder = "點擊開啟專屬數字鍵盤...";
+                inputElem.readOnly = true;
             } else {
                 inputElem.readOnly = false;
                 if (platform === '蝦皮') {
@@ -692,7 +704,7 @@
         function toggleNumpad(show) {
             const platform = document.getElementById('platformType').value;
             const numpad = document.getElementById('numpad');
-            if ((platform === '官網' || platform === '客戶私訂') && show) {
+            if ((platform === '官網' || platform === '客戶私訂' || platform === '酷澎') && show) {
                 numpad.style.display = 'block';
             } else {
                 numpad.style.display = 'none';
@@ -710,6 +722,8 @@
             } else {
                 if (platform === '官網') {
                     if (inputElem.value.length < 4) inputElem.value += val;
+                } else if (platform === '酷澎') {
+                    if (inputElem.value.length < 15) inputElem.value += val;
                 } else {
                     inputElem.value += val;
                 }
@@ -768,6 +782,14 @@
                     barcodeInput.select();
                     return;
                 }
+            } else if (platform === '酷澎') {
+                const coupangRegex = /^\d{15}$/;
+                if (!coupangRegex.test(rawValue)) {
+                    playErrorSound();
+                    setStatusDisplay('error', '❌ 酷澎訂單號格式錯誤！必須正好為 15 碼純數字！', `輸入碼: ${rawValue || '空白'}`);
+                    toggleNumpad(true);
+                    return;
+                }
             } else if (platform === '官網') {
                 const officialRegex = /^\d{4}$/;
                 if (!officialRegex.test(rawValue)) {
@@ -790,7 +812,7 @@
                 playDuplicateSound();
                 const existItem = records.find(r => r.barcode === finalBarcode && r.status !== 'cancelled');
                 setStatusDisplay('duplicate', `⚠️ 重複紀錄警告！該訂單已於 ${existItem.timestamp.split(' ')[1]} 記錄過！`, `單號/姓名: ${finalBarcode}`);
-                if (platform === '官網' || platform === '客戶私訂') toggleNumpad(true);
+                if (platform === '官網' || platform === '客戶私訂' || platform === '酷澎') toggleNumpad(true);
                 else barcodeInput.select();
                 return;
             }
@@ -819,7 +841,7 @@
 
             barcodeInput.value = '';
             toggleNumpad(false);
-            if (platform !== '官網' && platform !== '客戶私訂') barcodeInput.focus();
+            if (platform !== '官網' && platform !== '客戶私訂' && platform !== '酷澎') barcodeInput.focus();
 
             currentPage = 1;
             updateStats();
@@ -879,6 +901,7 @@
                 '蝦皮': 0, 
                 'iOPEN Mall 常溫': 0, 
                 'iOPEN Mall 冷凍': 0, 
+                '酷澎': 0,
                 '官網': 0, 
                 '客戶私訂': 0
             };
