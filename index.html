@@ -880,123 +880,171 @@
         }
 
         function processScan() {
-            initAudioVideo();
-            const barcodeInput = document.getElementById('barcodeInput');
-            let rawValue = barcodeInput.value.trim();
-            const platform = document.getElementById('platformType').value;
-            const picker = document.getElementById('picker').value || '未選擇';
-            const packer = document.getElementById('packer').value || '未選擇';
+    initAudioVideo();
+    const barcodeInput = document.getElementById('barcodeInput');
+    let rawValue = barcodeInput.value.trim();
+    const platformElem = document.getElementById('platformType');
+    const platform = platformElem.value;
+    const picker = document.getElementById('picker').value || '未選擇';
+    const packer = document.getElementById('packer').value || '未選擇';
 
-            let finalBarcode = rawValue;
+    // 判斷條碼特徵
+    const isIopenRoomJson = rawValue.includes('Ordinary') || rawValue.includes('code2');
+    const isShopeeLength = /^[A-Za-z0-9]{14}$/.test(rawValue); // 蝦皮特徵 (14碼)
+    const isIopenIceLength = /^[A-Za-z0-9]{20}$/.test(rawValue); // 冷凍特徵 (20碼)
 
-            if (platform === '蝦皮') {
-                finalBarcode = rawValue.toUpperCase();
-                const shopeeRegex = /^[A-Z0-9]{14}$/;
-                if (!shopeeRegex.test(finalBarcode)) {
-                    playErrorSound();
-                    setStatusDisplay('error', '❌ 蝦皮訂單號格式錯誤！必須正好為 14 碼大寫英數字！', `輸入碼: ${rawValue || '空白'}`);
-                    barcodeInput.select();
-                    return;
+    // -------------------------------------------------------------
+    // 🔥 防錯 1：在「非 IOP 常溫」平台刷入 IOP 常溫條碼 (JSON)
+    // -------------------------------------------------------------
+    if (isIopenRoomJson && platform !== 'iOPEN Mall 常溫') {
+        playErrorSound();
+        setStatusDisplay('error', `⚠️ 這是 iOPEN 常溫條碼！請先切換平台！`, `當前平台: [${platform}]，無法刷入此條碼`);
+        barcodeInput.select();
+        return;
+    }
+
+    // -------------------------------------------------------------
+    // 🔥 防錯 2：在「IOP 常溫」平台誤刷了蝦皮或 20 碼條碼
+    // -------------------------------------------------------------
+    if (platform === 'iOPEN Mall 常溫' && !isIopenRoomJson) {
+        if (isShopeeLength) {
+            playErrorSound();
+            setStatusDisplay('error', `⚠️ 這是蝦皮單號格式 (14碼)！請確認是否忘記切換為【蝦皮】！`, `刷入單號: ${rawValue}`);
+            barcodeInput.select();
+            return;
+        } else if (isIopenIceLength) {
+            playErrorSound();
+            setStatusDisplay('error', `⚠️ 這是 20 碼冷凍單號！請確認是否忘記切換為【iOPEN 冷凍】！`, `刷入單號: ${rawValue}`);
+            barcodeInput.select();
+            return;
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 🔥 防錯 3：其他平台誤刷超長無效條碼 (長度 > 30 碼)
+    // -------------------------------------------------------------
+    if (platform !== 'iOPEN Mall 常溫' && rawValue.length > 30) {
+        playErrorSound();
+        setStatusDisplay('error', `❌ 條碼長度異常 (${rawValue.length}碼)！請確認訂單平台是否正確！`, `刷入內容: ${rawValue.substring(0, 15)}...`);
+        barcodeInput.select();
+        return;
+    }
+
+    let finalBarcode = rawValue;
+
+    // -------------------------------------------------------------
+    // 各平台正規驗證
+    // -------------------------------------------------------------
+    if (platform === '蝦皮') {
+        finalBarcode = rawValue.toUpperCase();
+        const shopeeRegex = /^[A-Z0-9]{14}$/;
+        if (!shopeeRegex.test(finalBarcode)) {
+            playErrorSound();
+            setStatusDisplay('error', '❌ 蝦皮訂單號格式錯誤！必須正好為 14 碼大寫英數字！', `輸入碼: ${rawValue || '空白'}`);
+            barcodeInput.select();
+            return;
+        }
+    } else if (platform === 'iOPEN Mall 常溫') {
+        if (rawValue.includes('Ordinary') || rawValue.includes('code2')) {
+            try {
+                const parsedObj = JSON.parse(rawValue);
+                if (parsedObj.Utility && parsedObj.Utility[0] && parsedObj.Utility[0].Ordinary[0].code2) {
+                    finalBarcode = parsedObj.Utility[0].Ordinary[0].code2;
                 }
-            } else if (platform === 'iOPEN Mall 常溫') {
-                if (rawValue.includes('Ordinary') || rawValue.includes('code2')) {
-                    try {
-                        const parsedObj = JSON.parse(rawValue);
-                        if (parsedObj.Utility && parsedObj.Utility[0] && parsedObj.Utility[0].Ordinary[0].code2) {
-                            finalBarcode = parsedObj.Utility[0].Ordinary[0].code2;
-                        }
-                    } catch (e) {
-                        const match = rawValue.match(/"code2":"([^"]+)"/);
-                        if (match && match[1]) finalBarcode = match[1];
-                    }
-                }
-                if (!finalBarcode || finalBarcode.length < 5) {
-                    playErrorSound();
-                    setStatusDisplay('error', '❌ iOPEN Mall 常溫條碼解析失敗或無效！', `原始字串: ${rawValue || '空白'}`);
-                    barcodeInput.select();
-                    return;
-                }
-            } else if (platform === 'iOPEN Mall 冷凍') {
-                finalBarcode = rawValue.toUpperCase();
-                const iopenIceRegex = /^[A-Z0-9]{20}$/;
-                if (!iopenIceRegex.test(finalBarcode)) {
-                    playErrorSound();
-                    setStatusDisplay('error', '❌ iOPEN Mall 冷凍條碼格式錯誤！必須正好為 20 碼英數字！', `輸入碼: ${rawValue || '空白'}`);
-                    barcodeInput.select();
-                    return;
-                }
-            } else if (platform === '酷澎') {
-                const coupangRegex = /^\d{15}$/;
-                if (!coupangRegex.test(rawValue)) {
-                    playErrorSound();
-                    setStatusDisplay('error', '❌ 酷澎訂單號格式錯誤！必須正好為 15 碼純數字！', `輸入碼: ${rawValue || '空白'}`);
-                    toggleNumpad(true);
-                    return;
-                }
-            } else if (platform === '官網') {
-                const officialRegex = /^\d{4}$/;
-                if (!officialRegex.test(rawValue)) {
-                    playErrorSound();
-                    setStatusDisplay('error', '❌ 官網訂單號格式錯誤！必須正好為 4 碼數字！', `輸入碼: ${rawValue || '空白'}`);
-                    toggleNumpad(true);
-                    return;
-                }
-            } else if (platform === '客戶私訂') {
-                if (!rawValue) {
-                    playErrorSound();
-                    setStatusDisplay('error', '❌ 請輸入私訂數字編號！', '不可留白');
-                    toggleNumpad(true);
-                    return;
-                }
-            }
-
-            const isDuplicate = records.some(r => r.barcode === finalBarcode && r.status !== 'cancelled');
-            if (isDuplicate) {
-                playDuplicateSound();
-                const existItem = records.find(r => r.barcode === finalBarcode && r.status !== 'cancelled');
-                setStatusDisplay('duplicate', `⚠️ 重複紀錄警告！該訂單已於 ${existItem.timestamp.split(' ')[1]} 記錄過！`, `單號/姓名: ${finalBarcode}`);
-                if (platform === '官網' || platform === '客戶私訂' || platform === '酷澎') toggleNumpad(true);
-                else barcodeInput.select();
-                return;
-            }
-
-            const now = new Date();
-            const timestamp = formatDateTime(now);
-            const dateStr = now.toISOString().split('T')[0];
-
-            const newRecord = {
-                id: Date.now(),
-                timestamp: timestamp,
-                date: dateStr,
-                type: platform,
-                barcode: finalBarcode,
-                picker: picker,
-                packer: packer,
-                status: 'active'
-            };
-
-            playSuccessSound();
-            records.unshift(newRecord);
-            saveRecordsLocal();
-
-            setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
-
-            barcodeInput.value = '';
-            toggleNumpad(false);
-            if (platform !== '官網' && platform !== '客戶私訂' && platform !== '酷澎') barcodeInput.focus();
-
-            currentPage = 1;
-            updateStats();
-            renderScanRecentList();
-
-            if (supabaseClientInstance) {
-                setTimeout(() => {
-                    supabaseClientInstance.from('shipping_records').insert([newRecord]).then(({ error }) => {
-                        if (error) console.warn("Supabase 靜默同步警告：", error);
-                    });
-                }, 10);
+            } catch (e) {
+                const match = rawValue.match(/"code2":"([^"]+)"/);
+                if (match && match[1]) finalBarcode = match[1];
             }
         }
+        if (!finalBarcode || finalBarcode.length < 5) {
+            playErrorSound();
+            setStatusDisplay('error', '❌ iOPEN Mall 常溫條碼解析失敗或無效！', `原始字串: ${rawValue || '空白'}`);
+            barcodeInput.select();
+            return;
+        }
+    } else if (platform === 'iOPEN Mall 冷凍') {
+        finalBarcode = rawValue.toUpperCase();
+        const iopenIceRegex = /^[A-Z0-9]{20}$/;
+        if (!iopenIceRegex.test(finalBarcode)) {
+            playErrorSound();
+            setStatusDisplay('error', '❌ iOPEN Mall 冷凍條碼格式錯誤！必須正好為 20 碼英數字！', `輸入碼: ${rawValue || '空白'}`);
+            barcodeInput.select();
+            return;
+        }
+    } else if (platform === '酷澎') {
+        const coupangRegex = /^\d{15}$/;
+        if (!coupangRegex.test(rawValue)) {
+            playErrorSound();
+            setStatusDisplay('error', '❌ 酷澎訂單號格式錯誤！必須正好為 15 碼純數字！', `輸入碼: ${rawValue || '空白'}`);
+            toggleNumpad(true);
+            return;
+        }
+    } else if (platform === '官網') {
+        const officialRegex = /^\d{4}$/;
+        if (!officialRegex.test(rawValue)) {
+            playErrorSound();
+            setStatusDisplay('error', '❌ 官網訂單號格式錯誤！必須正好為 4 碼數字！', `輸入碼: ${rawValue || '空白'}`);
+            toggleNumpad(true);
+            return;
+        }
+    } else if (platform === '客戶私訂') {
+        if (!rawValue) {
+            playErrorSound();
+            setStatusDisplay('error', '❌ 請輸入私訂數字編號！', '不可留白');
+            toggleNumpad(true);
+            return;
+        }
+    }
+
+    // 重複單號檢查
+    const isDuplicate = records.some(r => r.barcode === finalBarcode && r.status !== 'cancelled');
+    if (isDuplicate) {
+        playDuplicateSound();
+        const existItem = records.find(r => r.barcode === finalBarcode && r.status !== 'cancelled');
+        setStatusDisplay('duplicate', `⚠️ 重複紀錄警告！該訂單已於 ${existItem.timestamp.split(' ')[1]} 記錄過！`, `單號/姓名: ${finalBarcode}`);
+        if (platform === '官網' || platform === '客戶私訂' || platform === '酷澎') toggleNumpad(true);
+        else barcodeInput.select();
+        return;
+    }
+
+    // 成功寫入邏輯
+    const now = new Date();
+    const timestamp = formatDateTime(now);
+    const dateStr = now.toISOString().split('T')[0];
+
+    const newRecord = {
+        id: Date.now(),
+        timestamp: timestamp,
+        date: dateStr,
+        type: platform,
+        barcode: finalBarcode,
+        picker: picker,
+        packer: packer,
+        status: 'active'
+    };
+
+    playSuccessSound();
+    records.unshift(newRecord);
+    saveRecordsLocal();
+
+    setStatusDisplay('success', `✅ 紀錄成功！[${platform}] 撿:${picker} / 包:${packer}`, `單號/姓名: ${finalBarcode}`);
+
+    barcodeInput.value = '';
+    toggleNumpad(false);
+    if (platform !== '官網' && platform !== '客戶私訂' && platform !== '酷澎') barcodeInput.focus();
+
+    currentPage = 1;
+    updateStats();
+    renderScanRecentList();
+
+    if (supabaseClientInstance) {
+        setTimeout(() => {
+            supabaseClientInstance.from('shipping_records').insert([newRecord]).then(({ error }) => {
+                if (error) console.warn("Supabase 靜默同步警告：", error);
+            });
+        }, 10);
+    }
+}
 
         function setStatusDisplay(state, msg, detail = '') {
             const statusBox = document.getElementById('statusMessage');
