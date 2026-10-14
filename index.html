@@ -880,7 +880,7 @@
             processScan();
         }
 
-        function processScan() {
+       function processScan() {
     initAudioVideo();
     const barcodeInput = document.getElementById('barcodeInput');
     let rawValue = barcodeInput.value.trim();
@@ -891,11 +891,12 @@
 
     // 判斷條碼特徵
     const isIopenRoomJson = rawValue.includes('Ordinary') || rawValue.includes('code2');
-    const isShopeeLength = /^[A-Za-z0-9]{14}$/.test(rawValue); // 蝦皮特徵 (14碼)
-    const isIopenIceLength = /^[A-Za-z0-9]{20}$/.test(rawValue); // 冷凍特徵 (20碼)
+    const isShopeeFormat = /^[A-Za-z0-9]{14}$/.test(rawValue);   // 蝦皮特徵：14 碼英數字
+    const isIopenIceFormat = /^[A-Za-z0-9]{20}$/.test(rawValue); // IOP 冷凍特徵：20 碼英數字
+    const isIopenRoomCode = /^[A-Za-z0-9]{15}$/.test(rawValue);  // IOP 常溫解析後特徵：15 碼英數字
 
     // -------------------------------------------------------------
-    // 🔥 防錯 1：在「非 IOP 常溫」平台刷入 IOP 常溫條碼 (JSON)
+    // 🔥 防錯 1：在「非 IOP 常溫」平台（如蝦皮）刷入 IOP 常溫 JSON 條碼
     // -------------------------------------------------------------
     if (isIopenRoomJson && platform !== 'iOPEN Mall 常溫') {
         playErrorSound();
@@ -905,19 +906,27 @@
     }
 
     // -------------------------------------------------------------
-    // 🔥 防錯 2：在「IOP 常溫」平台誤刷了蝦皮或 20 碼條碼
+    // 🔥 防錯 2：在「IOP 常溫」平台誤刷了蝦皮 (14碼) 或 20碼冷凍單號
     // -------------------------------------------------------------
-    if (platform === 'iOPEN Mall 常溫' && !isIopenRoomJson) {
-        if (isShopeeLength) {
-            playErrorSound();
-            setStatusDisplay('error', `⚠️ 這是蝦皮單號格式 (14碼)！請確認是否忘記切換為【蝦皮】！`, `刷入單號: ${rawValue}`);
-            barcodeInput.select();
-            return;
-        } else if (isIopenIceLength) {
-            playErrorSound();
-            setStatusDisplay('error', `⚠️ 這是 20 碼冷凍單號！請確認是否忘記切換為【iOPEN 冷凍】！`, `刷入單號: ${rawValue}`);
-            barcodeInput.select();
-            return;
+    if (platform === 'iOPEN Mall 常溫') {
+        // 如果不是 JSON 長字串，也不是 15 碼常溫單號
+        if (!isIopenRoomJson && !isIopenRoomCode) {
+            if (isShopeeFormat) {
+                playErrorSound();
+                setStatusDisplay('error', `⚠️ 這是 14 碼蝦皮單號！請確認是否忘記切換為【蝦皮】！`, `刷入單號: ${rawValue}`);
+                barcodeInput.select();
+                return;
+            } else if (isIopenIceFormat) {
+                playErrorSound();
+                setStatusDisplay('error', `⚠️ 這是 20 碼冷凍單號！請確認是否忘記切換為【iOPEN 冷凍】！`, `刷入單號: ${rawValue}`);
+                barcodeInput.select();
+                return;
+            } else {
+                playErrorSound();
+                setStatusDisplay('error', `❌ 非無效的 iOPEN 常溫條碼格式！`, `刷入字串長度為 ${rawValue.length} 碼`);
+                barcodeInput.select();
+                return;
+            }
         }
     }
 
@@ -957,9 +966,11 @@
                 if (match && match[1]) finalBarcode = match[1];
             }
         }
-        if (!finalBarcode || finalBarcode.length < 5) {
+        
+        // 嚴格驗證解析出來的 IOP 常溫單號必須精確為 15 碼
+        if (!finalBarcode || finalBarcode.length !== 15) {
             playErrorSound();
-            setStatusDisplay('error', '❌ iOPEN Mall 常溫條碼解析失敗或無效！', `原始字串: ${rawValue || '空白'}`);
+            setStatusDisplay('error', `❌ iOPEN Mall 常溫單號格式錯誤！解析長度為 ${finalBarcode.length} 碼，必須為 15 碼！`, `單號: ${finalBarcode}`);
             barcodeInput.select();
             return;
         }
