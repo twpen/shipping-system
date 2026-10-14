@@ -751,29 +751,30 @@
         });
 
         function initSupabaseAsync() {
-            setTimeout(async () => {
-                try {
-                    if (window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_URL.startsWith('https://')) {
-                        supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                        
-                        const { data, error } = await supabaseClientInstance
-                            .from('shipping_records')
-                            .select('*')
-                            .order('id', { ascending: false });
+    setTimeout(async () => {
+        try {
+            if (window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_URL.startsWith('https://')) {
+                supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                const { data, error } = await supabaseClientInstance
+                    .from('shipping_records')
+                    .select('*')
+                    .order('id', { ascending: false })
+                    .limit(1000); // 👈 預設載入最新 1000 筆，保障現場掃描速度
 
-                        if (!error && data && data.length > 0) {
-                            records = data;
-                            saveRecordsLocal();
-                            updateStats();
-                            renderScanRecentList();
-                            setStatusDisplay('default', '系統就緒（已同步雲端資料庫）');
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Supabase 初始化跳過，運作於本地模式：", e);
+                if (!error && data && data.length > 0) {
+                    records = data;
+                    saveRecordsLocal();
+                    updateStats();
+                    renderScanRecentList();
+                    setStatusDisplay('default', '系統就緒（已同步雲端資料庫）');
                 }
-            }, 100);
+            }
+        } catch (e) {
+            console.warn("Supabase 初始化跳過，運作於本地模式：", e);
         }
+    }, 100);
+}
 
         function updateClock() {
             const now = new Date();
@@ -1168,52 +1169,97 @@
             }
         }
 
-        function filterRecords() {
-            const startDate = document.getElementById('queryStartDate').value;
-            const endDate = document.getElementById('queryEndDate').value;
-            const barcodeKey = document.getElementById('queryBarcode').value.trim().toLowerCase();
-            const platformKey = document.getElementById('queryPlatform').value;
-            const pickerKey = document.getElementById('queryPicker').value;
-            const packerKey = document.getElementById('queryPacker').value;
+        async function filterRecords() {
+    const startDate = document.getElementById('queryStartDate').value;
+    const endDate = document.getElementById('queryEndDate').value;
+    const barcodeKey = document.getElementById('queryBarcode').value.trim();
+    const platformKey = document.getElementById('queryPlatform').value;
+    const pickerKey = document.getElementById('queryPicker').value;
+    const packerKey = document.getElementById('queryPacker').value;
 
-            const filtered = records.filter(r => {
-                if (startDate && r.date < startDate) return false;
-                if (endDate && r.date > endDate) return false;
-                if (barcodeKey && !r.barcode.toLowerCase().includes(barcodeKey)) return false;
-                if (platformKey && r.type !== platformKey) return false;
-                if (pickerKey && r.picker !== pickerKey) return false;
-                if (packerKey && r.packer !== packerKey) return false;
-                return true;
-            });
+    const tbody = document.getElementById('queryList');
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">⏳ 正在從雲端資料庫查詢中...</td></tr>`;
 
-            document.getElementById('queryCountBadge').innerText = `共 ${filtered.length} 筆紀錄`;
-            const tbody = document.getElementById('queryList');
+    let filteredData = [];
 
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">查無符合條件的出貨資料</td></tr>`;
-                return;
+    // 如果 Supabase 已連線，直接進行雲端伺服器端精準查詢
+    if (supabaseClientInstance) {
+        try {
+            let query = supabaseClientInstance
+                .from('shipping_records')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (startDate) query = query.gte('date', startDate);
+            if (endDate) query = query.lte('date', endDate);
+            if (barcodeKey) query = query.ilike('barcode', `%${barcodeKey}%`);
+            if (platformKey) query = query.eq('type', platformKey);
+            if (pickerKey) query = query.eq('picker', pickerKey);
+            if (packerKey) query = query.eq('packer', packerKey);
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error("雲端查詢失敗，改用本地資料查詢：", error);
+                filteredData = localFilterFallback(startDate, endDate, barcodeKey, platformKey, pickerKey, packerKey);
+            } else {
+                filteredData = data || [];
             }
-
-            tbody.innerHTML = filtered.map((r, index) => {
-                const isCancelled = r.status === 'cancelled';
-                const tagClass = tagClassMap[r.type] || 'tag-shopee';
-                return `
-                    <tr class="${isCancelled ? 'row-cancelled' : ''}">
-                        <td>${filtered.length - index}</td>
-                        <td><span class="time-badge">${r.timestamp}</span></td>
-                        <td><span class="tag-badge ${tagClass}">${r.type}</span></td>
-                        <td><strong style="letter-spacing: 0.5px;">${r.barcode}</strong></td>
-                        <td>${r.picker}</td>
-                        <td>${r.packer}</td>
-                        <td>
-                            ${isCancelled 
-                                ? `<span class="badge-cancelled">已取消</span>` 
-                                : `<button class="btn-cancel" onclick="cancelRecord(${r.id})">取消出貨</button>`}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+        } catch (e) {
+            console.error("雲端查詢異常，改用本地資料查詢：", e);
+            filteredData = localFilterFallback(startDate, endDate, barcodeKey, platformKey, pickerKey, packerKey);
         }
+    } else {
+        // 本地模式備援
+        filteredData = localFilterFallback(startDate, endDate, barcodeKey, platformKey, pickerKey, packerKey);
+    }
+
+    renderQueryResultTable(filteredData);
+}
+
+// 本地備援過濾邏輯
+function localFilterFallback(startDate, endDate, barcodeKey, platformKey, pickerKey, packerKey) {
+    return records.filter(r => {
+        if (startDate && r.date < startDate) return false;
+        if (endDate && r.date > endDate) return false;
+        if (barcodeKey && !r.barcode.toLowerCase().includes(barcodeKey.toLowerCase())) return false;
+        if (platformKey && r.type !== platformKey) return false;
+        if (pickerKey && r.picker !== pickerKey) return false;
+        if (packerKey && r.packer !== packerKey) return false;
+        return true;
+    });
+}
+
+// 渲染查詢結果表格
+function renderQueryResultTable(filtered) {
+    document.getElementById('queryCountBadge').innerText = `共 ${filtered.length} 筆紀錄`;
+    const tbody = document.getElementById('queryList');
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">查無符合條件的出貨資料</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map((r, index) => {
+        const isCancelled = r.status === 'cancelled';
+        const tagClass = tagClassMap[r.type] || 'tag-shopee';
+        return `
+            <tr class="${isCancelled ? 'row-cancelled' : ''}">
+                <td>${filtered.length - index}</td>
+                <td><span class="time-badge">${r.timestamp}</span></td>
+                <td><span class="tag-badge ${tagClass}">${r.type}</span></td>
+                <td><strong style="letter-spacing: 0.5px;">${r.barcode}</strong></td>
+                <td>${r.picker}</td>
+                <td>${r.packer}</td>
+                <td>
+                    ${isCancelled 
+                        ? `<span class="badge-cancelled">已取消</span>` 
+                        : `<button class="btn-cancel" onclick="cancelRecord(${r.id})">取消出貨</button>`}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
 
         function exportCSV() {
             if (records.length === 0) {
