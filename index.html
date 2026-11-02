@@ -1119,52 +1119,62 @@
         }
 
         function renderScanRecentList() {
-            const tbody = document.getElementById('scanRecentList');
-            if (!tbody) return;
+    const tbody = document.getElementById('scanRecentList');
+    if (!tbody) return;
 
-            const totalCount = records.length;
-            const totalPages = Math.ceil(totalCount / pageSize) || 1;
+    // 1. 先取得本地「今天」的日期字串 (YYYY-MM-DD)
+    const now = new Date();
+    const localYear = now.getFullYear();
+    const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const localDay = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${localYear}-${localMonth}-${localDay}`;
 
-            if (currentPage > totalPages) currentPage = totalPages;
+    // 2. 過濾出「今天」的現場出貨紀錄
+    const todayRecords = records.filter(r => r.date === todayStr);
 
-            const startIndex = (currentPage - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            const pageRecords = records.slice(startIndex, endIndex);
+    const totalCount = todayRecords.length;
+    const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-            if (records.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">目前尚無出貨紀錄</td></tr>`;
-                document.getElementById('pageInfo').innerText = `第 1 / 1 頁，共 0 筆`;
-                document.getElementById('btnPrevPage').disabled = true;
-                document.getElementById('btnNextPage').disabled = true;
-                return;
-            }
+    if (currentPage > totalPages) currentPage = totalPages;
 
-            tbody.innerHTML = pageRecords.map((r, index) => {
-                const isCancelled = r.status === 'cancelled';
-                const tagClass = tagClassMap[r.type] || 'tag-shopee';
-                const globalIndex = totalCount - (startIndex + index);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageRecords = todayRecords.slice(startIndex, endIndex);
 
-                return `
-                    <tr class="${isCancelled ? 'row-cancelled' : ''}">
-                        <td>${globalIndex}</td>
-                        <td><span class="time-badge">${r.timestamp}</span></td>
-                        <td><span class="tag-badge ${tagClass}">${r.type}</span></td>
-                        <td><strong style="letter-spacing: 0.5px;">${r.barcode}</strong></td>
-                        <td>${r.picker}</td>
-                        <td>${r.packer}</td>
-                        <td>
-                            ${isCancelled 
-                                ? `<span class="badge-cancelled">已取消</span>` 
-                                : `<button class="btn-cancel" onclick="cancelRecord(${r.id})">取消出貨</button>`}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+    if (totalCount === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">📅 今日尚無出貨紀錄</td></tr>`;
+        document.getElementById('pageInfo').innerText = `第 1 / 1 頁，共 0 筆`;
+        document.getElementById('btnPrevPage').disabled = true;
+        document.getElementById('btnNextPage').disabled = true;
+        return;
+    }
 
-            document.getElementById('pageInfo').innerText = `第 ${currentPage} / ${totalPages} 頁，共 ${totalCount} 筆`;
-            document.getElementById('btnPrevPage').disabled = (currentPage === 1);
-            document.getElementById('btnNextPage').disabled = (currentPage >= totalPages);
-        }
+    tbody.innerHTML = pageRecords.map((r, index) => {
+        const isCancelled = r.status === 'cancelled';
+        const tagClass = tagClassMap[r.type] || 'tag-shopee';
+        const globalIndex = totalCount - (startIndex + index);
+
+        return `
+            <tr class="${isCancelled ? 'row-cancelled' : ''}">
+                <td>${globalIndex}</td>
+                <td><span class="time-badge">${r.timestamp}</span></td>
+                <td><span class="tag-badge ${tagClass}">${r.type}</span></td>
+                <td><strong style="letter-spacing: 0.5px;">${r.barcode}</strong></td>
+                <td>${r.picker}</td>
+                <td>${r.packer}</td>
+                <td>
+                    ${isCancelled 
+                        ? `<span class="badge-cancelled">已取消</span>` 
+                        : `<button class="btn-cancel" onclick="cancelRecord(${r.id})">取消出貨</button>`}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    document.getElementById('pageInfo').innerText = `第 ${currentPage} / ${totalPages} 頁，共 ${totalCount} 筆`;
+    document.getElementById('btnPrevPage').disabled = (currentPage === 1);
+    document.getElementById('btnNextPage').disabled = (currentPage >= totalPages);
+}
 
         function changePageSize() {
             pageSize = parseInt(document.getElementById('pageSizeSelect').value);
