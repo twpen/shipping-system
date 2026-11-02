@@ -721,9 +721,16 @@
         };
 
         window.addEventListener('DOMContentLoaded', () => {
-            const todayStr = new Date().toISOString().split('T')[0];
-            document.getElementById('queryStartDate').value = todayStr;
-            document.getElementById('queryEndDate').value = todayStr;
+            const now = new Date();
+            const localYear = now.getFullYear();
+            const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+            const localDay = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${localYear}-${localMonth}-${localDay}`;
+
+            const startDateElem = document.getElementById('queryStartDate');
+            const endDateElem = document.getElementById('queryEndDate');
+            if (startDateElem) startDateElem.value = todayStr;
+            if (endDateElem) endDateElem.value = todayStr;
 
             updateStats();
             renderScanRecentList();
